@@ -8,11 +8,12 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
-
+    
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
         /* CSS Variables untuk tema */
@@ -26,6 +27,8 @@
             --border-color: #e0e0e0;
             --shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
             --success-color: #2e7d32;
+            --warning-color: #ff9800;
+            --error-color: #f44336;
         }
 
         /* Reset dan Pengaturan Dasar */
@@ -77,16 +80,49 @@
             height: 32px;
         }
 
+        .header-nav {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+        
         .header-nav a {
             text-decoration: none;
             color: var(--light-text-color);
-            margin-left: 1.5rem;
             font-weight: 500;
             transition: color 0.3s ease;
         }
 
         .header-nav a:hover, .header-nav a.active {
             color: var(--primary-color);
+        }
+        
+        .language-selector {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background-color: #eef1f1;
+            padding: 0.5rem 1rem;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .language-selector:hover {
+            background-color: #e0e0e0;
+        }
+        
+        .language-flag {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #f0f0f0;
+            font-size: 14px;
+            font-weight: bold;
         }
 
         /* Layout Utama (2 Kolom) */
@@ -124,6 +160,12 @@
             font-weight: 600;
             margin: 0;
         }
+        
+        .card-subtitle {
+            color: var(--light-text-color);
+            font-size: 0.9rem;
+            margin-top: 0.25rem;
+        }
 
         /* --- Bagian Chat --- */
         #chat-box {
@@ -153,6 +195,71 @@
         #chat-input:focus { outline: none; border-color: var(--primary-color); }
         #send-button { padding: 0 25px; border: none; background-color: var(--primary-color); color: white; cursor: pointer; border-radius: 0 25px 25px 0; font-weight: 600; transition: background-color 0.3s ease; }
         #send-button:hover { background-color: var(--secondary-color); }
+        
+        .search-container {
+            display: flex;
+            margin: 1rem 0;
+            position: relative;
+        }
+        
+        #search-input {
+            flex-grow: 1;
+            padding: 12px 15px 12px 40px;
+            border: 1px solid var(--border-color);
+            border-radius: 25px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 0.95rem;
+        }
+        
+        #search-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+        
+        .search-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--light-text-color);
+        }
+        
+        .search-results {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            max-height: 300px;
+            overflow-y: auto;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            display: none;
+        }
+        
+        .search-result-item {
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .search-result-item:hover {
+            background-color: #f5f5f5;
+        }
+        
+        .search-result-item h4 {
+            margin: 0;
+            font-size: 1rem;
+            color: var(--primary-color);
+        }
+        
+        .search-result-item p {
+            margin: 5px 0 0;
+            font-size: 0.9rem;
+            color: var(--text-color);
+        }
 
         /* --- Bagian Tracking Terapi --- */
         #tracking-form { display: flex; flex-direction: column; gap: 1rem; margin-bottom: 1.5rem; }
@@ -167,6 +274,12 @@
         }
         #tracking-form button:hover { background-color: var(--secondary-color); }
         
+        /* Progress Tracker */
+        .progress-chart-container {
+            height: 250px;
+            margin: 1rem 0;
+        }
+
         /* --- [BARU] Styling untuk Fitur AI Motion Correct --- */
         #motion-correct-card .card-header .icon { color: var(--success-color); }
         #ai-tutor-ui .ai-view-container {
@@ -198,9 +311,143 @@
         }
         #start-ai-session-btn:hover { background-color: #1b5e20; }
         #start-ai-session-btn:disabled { background-color: var(--light-text-color); cursor: not-allowed; }
+        
+        /* --- Timer Reminder --- */
+        .timer-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1.5rem;
+        }
+        
+        .timer-display {
+            font-size: 3rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin: 1rem 0;
+            font-family: monospace;
+        }
+        
+        .timer-controls {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .timer-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .timer-btn:hover {
+            background-color: var(--secondary-color);
+        }
+        
+        .timer-btn.stop {
+            background-color: var(--error-color);
+        }
+        
+        .timer-btn.stop:hover {
+            background-color: #d32f2f;
+        }
+        
+        .timer-input-container {
+            display: flex;
+            gap: 1rem;
+            width: 100%;
+            margin-top: 1rem;
+        }
+        
+        .timer-input {
+            flex: 1;
+            padding: 10px 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            text-align: center;
+            font-size: 1.1rem;
+        }
+        
+        .timer-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+        
+        .timer-exercises {
+            margin-top: 1.5rem;
+            width: 100%;
+        }
+        
+        .exercise-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .exercise-item:last-child {
+            border-bottom: none;
+        }
+        
+        .exercise-name {
+            font-weight: 500;
+        }
+        
+        .exercise-time {
+            color: var(--light-text-color);
+        }
+        
+        .reminder-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background-color: var(--error-color);
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        
+        .reminder-icon {
+            position: relative;
+        }
 
         /* --- Responsiveness --- */
-        @media (max-width: 992px) { .main-layout { grid-template-columns: 1fr; } }
+        @media (max-width: 992px) { 
+            .main-layout { grid-template-columns: 1fr; } 
+            .ai-view-container > * { min-width: 100%; }
+        }
+        
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+            
+            .header-nav {
+                width: 100%;
+                justify-content: space-between;
+            }
+        }
+        
+        footer {
+            text-align: center;
+            padding: 2rem 0;
+            color: var(--light-text-color);
+            margin-top: 2rem;
+            border-top: 1px solid var(--border-color);
+        }
     </style>
 </head>
 <body>
@@ -210,18 +457,29 @@
         <symbol id="icon-chat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></symbol>
         <symbol id="icon-track" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect><path d="m9 12 2 2 4-4"></path></symbol>
         <symbol id="icon-bot" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path><path d="M12 16h.01"></path></symbol>
+        <symbol id="icon-graph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10"></path><path d="M12 20V4"></path><path d="M6 20v-6"></path></symbol>
+        <symbol id="icon-timer" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></symbol>
     </svg>
 
     <div class="container">
         <header class="header">
             <div class="logo">
                 <svg class="logo-icon" fill="currentColor"><use href="#icon-logo"/></svg>
-                <span>Physio Connect</span>
+                <span id="app-title">Physio Connect</span>
             </div>
             <nav class="header-nav">
-                <a href="#chat-card">Konsultasi</a>
-                <a href="#tracking-card">Lacak Terapi</a>
-                <a href="#motion-correct-card">AI-Coach</a>
+                <a href="#chat-card" class="active" id="nav-consultation">Konsultasi</a>
+                <a href="#tracking-card" id="nav-tracking">Lacak Terapi</a>
+                <a href="#motion-correct-card" id="nav-ai">AI-Coach</a>
+                <div class="language-selector" id="language-selector">
+                    <div class="language-flag">ID</div>
+                    <span id="current-language">Indonesia</span>
+                    <i class="fas fa-chevron-down"></i>
+                </div>
+                <div class="reminder-icon">
+                    <i class="fas fa-bell" id="reminder-icon"></i>
+                    <div class="reminder-badge" id="reminder-badge">1</div>
+                </div>
             </nav>
         </header>
 
@@ -230,12 +488,24 @@
                 <div class="card" id="chat-card">
                     <div class="card-header">
                         <svg class="icon"><use href="#icon-chat"/></svg>
-                        <h2>Asisten Fisioterapi Virtual</h2>
+                        <div>
+                            <h2 id="assistant-title">Asisten Fisioterapi Virtual</h2>
+                            <div class="card-subtitle" id="assistant-subtitle">Tanya apapun tentang fisioterapi dan kesehatan</div>
+                        </div>
                     </div>
+                    
+                    <div class="search-container">
+                        <div class="search-icon">
+                            <i class="fas fa-search"></i>
+                        </div>
+                        <input type="text" id="search-input" placeholder="Cari topik fisioterapi...">
+                        <div class="search-results" id="search-results"></div>
+                    </div>
+                    
                     <div id="chat-box">
                          <div class="chat-message bot-message">
                             <div class="avatar"><svg class="icon"><use href="#icon-bot"/></svg></div>
-                            <div class="message-bubble">Selamat datang di Physio Connect!</div>
+                            <div class="message-bubble">Selamat datang di Physio Connect! Saya Asisten Fisioterapi Virtual Anda. Silakan tanyakan apapun tentang fisioterapi atau kesehatan tulang dan otot.</div>
                         </div>
                     </div>
                     <div id="chat-input-container">
@@ -247,7 +517,10 @@
                 <div class="card" id="tracking-card">
                     <div class="card-header">
                         <svg class="icon"><use href="#icon-track"/></svg>
-                        <h2>Jurnal Latihan & Terapi</h2>
+                        <div>
+                            <h2 id="tracking-title">Jurnal Latihan & Terapi</h2>
+                            <div class="card-subtitle" id="tracking-subtitle">Catat setiap sesi terapi dan latihan Anda</div>
+                        </div>
                     </div>
                     <form id="tracking-form">
                         <input type="date" id="log-date" required>
@@ -257,18 +530,24 @@
                         </select>
                         <input type="text" id="log-activity" placeholder="Aktivitas/Terapi (Contoh: Peregangan Punggung)" required>
                         <textarea id="log-notes" placeholder="Catatan tambahan (durasi, intensitas, perasaan, dll.)"></textarea>
-                        <button type="submit">Tambah Catatan</button>
+                        <button type="submit" id="add-log-btn">Tambah Catatan</button>
                     </form>
                 </div>
                 
                 <div class="card" id="motion-correct-card">
                     <div class="card-header">
                         <svg class="icon"><use href="#icon-bot"/></svg>
-                        <h2>AI Motion Correct - Asisten Latihan Virtual</h2>
+                        <div>
+                            <h2 id="ai-title">AI Motion Correct - Asisten Latihan Virtual</h2>
+                            <div class="card-subtitle" id="ai-subtitle">Dapatkan panduan latihan dengan koreksi postur otomatis</div>
+                        </div>
                     </div>
                     <div id="ai-tutor-ui">
                         <div class="ai-view-container">
-                             <video id="instruction-video" src="path/to/your/instruction_video.mp4" controls muted loop playsinline></video>
+                            <video id="instruction-video" controls muted loop playsinline>
+                                <source src="https://assets.codepen.io/3364143/sample.mp4" type="video/mp4">
+                                Browser Anda tidak mendukung video tag.
+                            </video>
                             <div class="webcam-container">
                                 <video id="webcam-feed" autoplay playsinline muted></video>
                                 <canvas id="pose-overlay"></canvas>
@@ -285,10 +564,53 @@
             </div>
 
             <div class="sidebar-column">
-                 </div>
+                <div class="card">
+                    <div class="card-header">
+                        <svg class="icon"><use href="#icon-graph"/></svg>
+                        <h2 id="progress-title">Progress Terapi</h2>
+                    </div>
+                    <div class="progress-chart-container">
+                        <canvas id="progress-chart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <svg class="icon"><use href="#icon-timer"/></svg>
+                        <h2 id="reminder-title">Reminder Latihan</h2>
+                    </div>
+                    <div class="timer-container">
+                        <div class="timer-display" id="timer-display">00:00</div>
+                        <div class="timer-controls">
+                            <button class="timer-btn" id="start-timer">Mulai</button>
+                            <button class="timer-btn stop" id="stop-timer">Hentikan</button>
+                        </div>
+                        
+                        <div class="timer-input-container">
+                            <input type="number" id="minutes-input" class="timer-input" min="1" max="60" value="5" placeholder="Menit">
+                            <input type="number" id="seconds-input" class="timer-input" min="0" max="59" value="0" placeholder="Detik">
+                        </div>
+                        
+                        <div class="timer-exercises">
+                            <div class="exercise-item">
+                                <span class="exercise-name" id="exercise-1">Peregangan Leher</span>
+                                <span class="exercise-time">05:00</span>
+                            </div>
+                            <div class="exercise-item">
+                                <span class="exercise-name" id="exercise-2">Peregangan Bahu</span>
+                                <span class="exercise-time">04:30</span>
+                            </div>
+                            <div class="exercise-item">
+                                <span class="exercise-name" id="exercise-3">Peregangan Punggung</span>
+                                <span class="exercise-time">06:00</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </main>
         
-        <footer class="footer">
+        <footer>
             &copy; 2025 Physio Connect | Platform Simulasi untuk Edukasi.
         </footer>
     </div>
@@ -297,7 +619,349 @@
 
     <script>
     document.addEventListener('DOMContentLoaded', function() {
-
+        // --- Inisialisasi bahasa ---
+        let currentLanguage = 'id';
+        const translations = {
+            id: {
+                appTitle: "Physio Connect",
+                navConsultation: "Konsultasi",
+                navTracking: "Lacak Terapi",
+                navAI: "AI-Coach",
+                assistantTitle: "Asisten Fisioterapi Virtual",
+                assistantSubtitle: "Tanya apapun tentang fisioterapi dan kesehatan",
+                trackingTitle: "Jurnal Latihan & Terapi",
+                trackingSubtitle: "Catat setiap sesi terapi dan latihan Anda",
+                aiTitle: "AI Motion Correct - Asisten Latihan Virtual",
+                aiSubtitle: "Dapatkan panduan latihan dengan koreksi postur otomatis",
+                progressTitle: "Progress Terapi",
+                reminderTitle: "Reminder Latihan",
+                exercise1: "Peregangan Leher",
+                exercise2: "Peregangan Bahu",
+                exercise3: "Peregangan Punggung",
+                searchPlaceholder: "Cari topik fisioterapi...",
+                addLogBtn: "Tambah Catatan",
+                startSessionBtn: "Mulai Sesi Latihan",
+                currentLanguage: "Indonesia"
+            },
+            en: {
+                appTitle: "Physio Connect",
+                navConsultation: "Consultation",
+                navTracking: "Track Therapy",
+                navAI: "AI-Coach",
+                assistantTitle: "Virtual Physiotherapy Assistant",
+                assistantSubtitle: "Ask anything about physiotherapy and health",
+                trackingTitle: "Exercise & Therapy Journal",
+                trackingSubtitle: "Record every therapy and exercise session",
+                aiTitle: "AI Motion Correct - Virtual Training Assistant",
+                aiSubtitle: "Get exercise guidance with automatic posture correction",
+                progressTitle: "Therapy Progress",
+                reminderTitle: "Exercise Reminder",
+                exercise1: "Neck Stretch",
+                exercise2: "Shoulder Stretch",
+                exercise3: "Back Stretch",
+                searchPlaceholder: "Search physiotherapy topics...",
+                addLogBtn: "Add Record",
+                startSessionBtn: "Start Training Session",
+                currentLanguage: "English"
+            }
+        };
+        
+        // Fungsi untuk mengganti bahasa
+        function changeLanguage(lang) {
+            currentLanguage = lang;
+            const langData = translations[lang];
+            
+            // Update teks di UI
+            document.getElementById('app-title').textContent = langData.appTitle;
+            document.getElementById('nav-consultation').textContent = langData.navConsultation;
+            document.getElementById('nav-tracking').textContent = langData.navTracking;
+            document.getElementById('nav-ai').textContent = langData.navAI;
+            document.getElementById('assistant-title').textContent = langData.assistantTitle;
+            document.getElementById('assistant-subtitle').textContent = langData.assistantSubtitle;
+            document.getElementById('tracking-title').textContent = langData.trackingTitle;
+            document.getElementById('tracking-subtitle').textContent = langData.trackingSubtitle;
+            document.getElementById('ai-title').textContent = langData.aiTitle;
+            document.getElementById('ai-subtitle').textContent = langData.aiSubtitle;
+            document.getElementById('progress-title').textContent = langData.progressTitle;
+            document.getElementById('reminder-title').textContent = langData.reminderTitle;
+            document.getElementById('exercise-1').textContent = langData.exercise1;
+            document.getElementById('exercise-2').textContent = langData.exercise2;
+            document.getElementById('exercise-3').textContent = langData.exercise3;
+            document.getElementById('search-input').placeholder = langData.searchPlaceholder;
+            document.getElementById('add-log-btn').textContent = langData.addLogBtn;
+            document.getElementById('start-ai-session-btn').textContent = langData.startSessionBtn;
+            document.getElementById('current-language').textContent = langData.currentLanguage;
+            document.querySelector('.language-flag').textContent = lang.toUpperCase();
+            
+            // Update placeholder chat
+            document.getElementById('chat-input').placeholder = 
+                lang === 'id' ? 'Ketik pesan Anda...' : 'Type your message...';
+        }
+        
+        // Event listener untuk tombol bahasa
+        document.getElementById('language-selector').addEventListener('click', function() {
+            const newLang = currentLanguage === 'id' ? 'en' : 'id';
+            changeLanguage(newLang);
+        });
+        
+        // Inisialisasi bahasa
+        changeLanguage('id');
+        
+        // --- Sistem Pencarian Fisioterapi ---
+        const fisioKnowledgeBase = [
+            {
+                id: "fisioterapi",
+                title_id: "Apa itu Fisioterapi?",
+                title_en: "What is Physiotherapy?",
+                content_id: "Fisioterapi adalah bentuk pelayanan kesehatan yang ditujukan untuk mengembangkan, memelihara, dan memulihkan gerak dan fungsi tubuh sepanjang daur kehidupan.",
+                content_en: "Physiotherapy is a healthcare profession that assesses, diagnoses, treats, and works to prevent disease and disability through physical means."
+            },
+            {
+                id: "latihan",
+                title_id: "Latihan Fisioterapi untuk Nyeri Punggung",
+                title_en: "Physiotherapy Exercises for Back Pain",
+                content_id: "Latihan peregangan dan penguatan otot punggung dapat membantu mengurangi nyeri punggung. Latihan seperti cat-camel stretch, pelvic tilt, dan bridge sangat efektif.",
+                content_en: "Stretching and strengthening exercises for the back muscles can help reduce back pain. Exercises like cat-camel stretch, pelvic tilt, and bridge are highly effective."
+            },
+            {
+                id: "rehabilitasi",
+                title_id: "Rehabilitasi Cedera Olahraga",
+                title_en: "Sports Injury Rehabilitation",
+                content_id: "Rehabilitasi cedera olahraga melibatkan program bertahap yang mencakup pengurangan rasa sakit, pemulihan gerak, penguatan otot, dan kembali ke aktivitas olahraga.",
+                content_en: "Sports injury rehabilitation involves a staged program including pain reduction, restoration of movement, muscle strengthening, and return to sports activities."
+            },
+            {
+                id: "postur",
+                title_id: "Koreksi Postur Tubuh",
+                title_en: "Posture Correction",
+                content_id: "Postur tubuh yang baik penting untuk kesehatan tulang belakang. Fisioterapis dapat membantu mengoreksi postur melalui latihan spesifik dan edukasi ergonomis.",
+                content_en: "Good posture is crucial for spinal health. Physiotherapists can help correct posture through specific exercises and ergonomic education."
+            }
+        ];
+        
+        const searchInput = document.getElementById('search-input');
+        const searchResults = document.getElementById('search-results');
+        
+        searchInput.addEventListener('input', function() {
+            const query = this.value.toLowerCase();
+            searchResults.innerHTML = '';
+            
+            if (query.length < 2) {
+                searchResults.style.display = 'none';
+                return;
+            }
+            
+            const filteredResults = fisioKnowledgeBase.filter(item => {
+                const title = currentLanguage === 'id' ? item.title_id : item.title_en;
+                return title.toLowerCase().includes(query);
+            });
+            
+            if (filteredResults.length > 0) {
+                filteredResults.forEach(result => {
+                    const title = currentLanguage === 'id' ? result.title_id : result.title_en;
+                    const content = currentLanguage === 'id' ? result.content_id : result.content_en;
+                    
+                    const resultItem = document.createElement('div');
+                    resultItem.className = 'search-result-item';
+                    resultItem.innerHTML = `
+                        <h4>${title}</h4>
+                        <p>${content}</p>
+                    `;
+                    resultItem.addEventListener('click', function() {
+                        const message = `${title}\n${content}`;
+                        addBotMessage(message);
+                        searchInput.value = '';
+                        searchResults.style.display = 'none';
+                    });
+                    searchResults.appendChild(resultItem);
+                });
+                searchResults.style.display = 'block';
+            } else {
+                searchResults.style.display = 'none';
+            }
+        });
+        
+        // Tutup hasil pencarian saat klik di luar
+        document.addEventListener('click', function(e) {
+            if (!searchResults.contains(e.target) && e.target !== searchInput) {
+                searchResults.style.display = 'none';
+            }
+        });
+        
+        // --- Fungsionalitas Asisten Virtual ---
+        const chatBox = document.getElementById('chat-box');
+        const chatInput = document.getElementById('chat-input');
+        const sendButton = document.getElementById('send-button');
+        
+        function addBotMessage(text) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'chat-message bot-message';
+            messageDiv.innerHTML = `
+                <div class="avatar"><svg class="icon"><use href="#icon-bot"/></svg></div>
+                <div class="message-bubble">${text}</div>
+            `;
+            chatBox.appendChild(messageDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+        
+        function addUserMessage(text) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'chat-message user-message';
+            messageDiv.innerHTML = `
+                <div class="avatar"><svg class="icon"><use href="#icon-bot"/></svg></div>
+                <div class="message-bubble">${text}</div>
+            `;
+            chatBox.appendChild(messageDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+            
+            // Simulasi respons bot setelah jeda
+            setTimeout(() => {
+                let response = "";
+                const lowerText = text.toLowerCase();
+                
+                if (lowerText.includes("halo") || lowerText.includes("hai")) {
+                    response = currentLanguage === 'id' ? 
+                        "Halo! Ada yang bisa saya bantu terkait fisioterapi?" : 
+                        "Hello! How can I assist you with physiotherapy?";
+                } else if (lowerText.includes("terima kasih")) {
+                    response = currentLanguage === 'id' ? 
+                        "Sama-sama! Jika ada pertanyaan lain, jangan ragu untuk bertanya." : 
+                        "You're welcome! If you have any other questions, feel free to ask.";
+                } else if (lowerText.includes("nyeri") || lowerText.includes("sakit")) {
+                    response = currentLanguage === 'id' ? 
+                        "Nyeri bisa disebabkan oleh berbagai faktor. Untuk nyeri ringan, istirahat dan kompres hangat/dingin bisa membantu. Jika nyeri berlanjut, saya sarankan untuk berkonsultasi dengan fisioterapis." : 
+                        "Pain can be caused by various factors. For mild pain, rest and hot/cold compresses may help. If the pain persists, I recommend consulting a physiotherapist.";
+                } else {
+                    response = currentLanguage === 'id' ? 
+                        "Saya memahami pertanyaan Anda. Sebagai asisten fisioterapi, saya dapat membantu dengan:\n- Informasi tentang latihan fisik\n- Tips menjaga postur tubuh\n- Panduan rehabilitasi cedera\n- Penjelasan tentang berbagai kondisi muskuloskeletal\n\nAda yang spesifik ingin Anda tanyakan?" : 
+                        "I understand your question. As a physiotherapy assistant, I can help with:\n- Exercise information\n- Posture maintenance tips\n- Injury rehabilitation guidance\n- Explanations about musculoskeletal conditions\n\nIs there something specific you'd like to ask?";
+                }
+                
+                addBotMessage(response);
+            }, 1000);
+        }
+        
+        sendButton.addEventListener('click', function() {
+            const message = chatInput.value.trim();
+            if (message) {
+                addUserMessage(message);
+                chatInput.value = '';
+            }
+        });
+        
+        chatInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendButton.click();
+            }
+        });
+        
+        // --- Fungsionalitas Progress Tracker ---
+        const progressChart = new Chart(
+            document.getElementById('progress-chart'),
+            {
+                type: 'line',
+                data: {
+                    labels: ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'],
+                    datasets: [{
+                        label: currentLanguage === 'id' ? 'Durasi Latihan (menit)' : 'Exercise Duration (min)',
+                        data: [20, 25, 22, 30, 28, 35, 30],
+                        borderColor: '#00838f',
+                        backgroundColor: 'rgba(0, 131, 143, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 40
+                        }
+                    }
+                }
+            }
+        );
+        
+        // Update chart saat bahasa berubah
+        document.getElementById('language-selector').addEventListener('click', function() {
+            setTimeout(() => {
+                progressChart.data.datasets[0].label = currentLanguage === 'id' ? 
+                    'Durasi Latihan (menit)' : 'Exercise Duration (min)';
+                progressChart.update();
+            }, 100);
+        });
+        
+        // --- Fungsionalitas Reminder Timer ---
+        const timerDisplay = document.getElementById('timer-display');
+        const startTimerBtn = document.getElementById('start-timer');
+        const stopTimerBtn = document.getElementById('stop-timer');
+        const minutesInput = document.getElementById('minutes-input');
+        const secondsInput = document.getElementById('seconds-input');
+        const reminderBadge = document.getElementById('reminder-badge');
+        const reminderIcon = document.getElementById('reminder-icon');
+        
+        let timerInterval;
+        let totalSeconds = 0;
+        let isTimerRunning = false;
+        
+        function startTimer() {
+            if (isTimerRunning) return;
+            
+            const minutes = parseInt(minutesInput.value) || 0;
+            const seconds = parseInt(secondsInput.value) || 0;
+            totalSeconds = minutes * 60 + seconds;
+            
+            if (totalSeconds <= 0) {
+                alert(currentLanguage === 'id' ? 
+                    "Silakan masukkan waktu yang valid" : 
+                    "Please enter a valid time");
+                return;
+            }
+            
+            isTimerRunning = true;
+            updateTimerDisplay();
+            
+            timerInterval = setInterval(() => {
+                totalSeconds--;
+                updateTimerDisplay();
+                
+                if (totalSeconds <= 0) {
+                    clearInterval(timerInterval);
+                    isTimerRunning = false;
+                    
+                    // Tampilkan notifikasi
+                    reminderBadge.textContent = "1";
+                    reminderBadge.style.display = "flex";
+                    
+                    // Tampilkan alert
+                    alert(currentLanguage === 'id' ? 
+                        "Waktu latihan Anda telah selesai! Selamat beristirahat." : 
+                        "Your exercise time is up! Time to rest.");
+                }
+            }, 1000);
+        }
+        
+        function stopTimer() {
+            clearInterval(timerInterval);
+            isTimerRunning = false;
+        }
+        
+        function updateTimerDisplay() {
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+            timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+        
+        startTimerBtn.addEventListener('click', startTimer);
+        stopTimerBtn.addEventListener('click', stopTimer);
+        
+        // Reset notifikasi saat badge diklik
+        reminderBadge.addEventListener('click', function() {
+            this.style.display = "none";
+        });
+        
         // --- Fungsionalitas AI Motion Correct ---
         const aiButton = document.getElementById('start-ai-session-btn');
         const aiWebcamFeed = document.getElementById('webcam-feed');
@@ -310,7 +974,9 @@
 
         async function setupAiCamera() {
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                alert('Browser Anda tidak mendukung akses kamera.');
+                alert(currentLanguage === 'id' ? 
+                    'Browser Anda tidak mendukung akses kamera.' : 
+                    'Your browser does not support camera access.');
                 return null;
             }
             try {
@@ -323,21 +989,29 @@
                     };
                 });
             } catch (error) {
-                alert('Akses kamera ditolak. Fitur ini memerlukan izin kamera untuk berfungsi.');
+                alert(currentLanguage === 'id' ? 
+                    'Akses kamera ditolak. Fitur ini memerlukan izin kamera untuk berfungsi.' : 
+                    'Camera access denied. This feature requires camera permission.');
                 return null;
             }
         }
 
         async function loadAiModel() {
             aiButton.disabled = true;
-            aiFeedbackText.textContent = "Memuat model AI, mohon tunggu...";
+            aiFeedbackText.textContent = currentLanguage === 'id' ? 
+                "Memuat model AI, mohon tunggu..." : 
+                "Loading AI model, please wait...";
             try {
                 aiModel = poseDetection.SupportedModels.MoveNet;
                 aiDetector = await poseDetection.createDetector(aiModel, { modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING });
-                aiFeedbackText.textContent = "Model siap. Posisikan diri Anda dan klik 'Mulai'.";
+                aiFeedbackText.textContent = currentLanguage === 'id' ? 
+                    "Model siap. Posisikan diri Anda dan klik 'Mulai'." : 
+                    "Model ready. Position yourself and click 'Start'.";
                 aiButton.disabled = false;
             } catch (error) {
-                aiFeedbackText.textContent = "Gagal memuat model AI. Coba muat ulang halaman.";
+                aiFeedbackText.textContent = currentLanguage === 'id' ? 
+                    "Gagal memuat model AI. Coba muat ulang halaman." : 
+                    "Failed to load AI model. Please reload the page.";
             }
         }
 
@@ -385,31 +1059,34 @@
                     const keypoints = poses[0].keypoints;
                     drawSkeleton(keypoints, 0.5, ctx);
 
-                    // --- [LOGIKA BARU] Analisis Postur & Akurasi 0-100% ---
+                    // Analisis Postur & Akurasi
                     const leftShoulder = keypoints.find(p => p.name === 'left_shoulder');
                     const rightShoulder = keypoints.find(p => p.name === 'right_shoulder');
                     let postureScore = 0;
-                    let feedbackMessage = "Lakukan gerakan sesuai video.";
+                    let feedbackMessage = currentLanguage === 'id' ? 
+                        "Lakukan gerakan sesuai video." : 
+                        "Perform the movement as shown in the video.";
 
                     if (leftShoulder && rightShoulder && leftShoulder.score > 0.6 && rightShoulder.score > 0.6) {
                         const shoulderYDiff = Math.abs(leftShoulder.y - rightShoulder.y);
                         const shoulderXDiff = Math.abs(leftShoulder.x - rightShoulder.x);
                         
-                        // Menghitung kemiringan bahu relatif terhadap jarak antar bahu
-                        // Ini membuat deteksi lebih konsisten terlepas dari jarak pengguna ke kamera
                         const tiltRatio = shoulderYDiff / shoulderXDiff;
-
-                        // Makin besar tiltRatio, makin miring bahunya, makin rendah skornya
-                        // Misal, jika kemiringan lebih dari 15% (tiltRatio > 0.15), skor akan turun drastis
                         postureScore = Math.max(0, 1 - (tiltRatio / 0.15));
                         
                         if (postureScore < 0.85) {
-                            feedbackMessage = "PERHATIAN: Luruskan bahu Anda!";
+                            feedbackMessage = currentLanguage === 'id' ? 
+                                "PERHATIAN: Luruskan bahu Anda!" : 
+                                "WARNING: Straighten your shoulders!";
                         } else {
-                            feedbackMessage = "Postur Bagus! Pertahankan.";
+                            feedbackMessage = currentLanguage === 'id' ? 
+                                "Postur Bagus! Pertahankan." : 
+                                "Good Posture! Keep it up.";
                         }
                     } else {
-                        feedbackMessage = "Pastikan kedua bahu terlihat jelas oleh kamera.";
+                        feedbackMessage = currentLanguage === 'id' ? 
+                            "Pastikan kedua bahu terlihat jelas oleh kamera." : 
+                            "Ensure both shoulders are clearly visible to the camera.";
                     }
 
                     const finalAccuracy = postureScore * 100;
@@ -417,7 +1094,9 @@
                     aiFeedbackText.textContent = feedbackMessage;
 
                 } else {
-                    aiFeedbackText.textContent = "Tidak ada orang yang terdeteksi.";
+                    aiFeedbackText.textContent = currentLanguage === 'id' ? 
+                        "Tidak ada orang yang terdeteksi." : 
+                        "No person detected.";
                     aiAccuracyScore.textContent = "0";
                 }
                 aiAnimationFrameId = requestAnimationFrame(poseLoop);
@@ -429,7 +1108,8 @@
                 const cameraReady = await setupAiCamera();
                 if (cameraReady) {
                     isAiSessionActive = true;
-                    aiButton.textContent = "Hentikan Sesi";
+                    aiButton.textContent = currentLanguage === 'id' ? 
+                        "Hentikan Sesi" : "Stop Session";
                     poseLoop();
                 }
             } else {
@@ -438,8 +1118,10 @@
                 const stream = aiWebcamFeed.srcObject;
                 if(stream) stream.getTracks().forEach(track => track.stop());
                 aiWebcamFeed.srcObject = null;
-                aiButton.textContent = "Mulai Sesi Latihan";
-                aiFeedbackText.textContent = "Sesi dihentikan.";
+                aiButton.textContent = currentLanguage === 'id' ? 
+                    "Mulai Sesi Latihan" : "Start Training Session";
+                aiFeedbackText.textContent = currentLanguage === 'id' ? 
+                    "Sesi dihentikan." : "Session stopped.";
                 aiAccuracyScore.textContent = "-";
             }
         });
