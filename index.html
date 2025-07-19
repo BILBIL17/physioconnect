@@ -753,6 +753,19 @@
                                 <source src="https://assets.codepen.io/3364143/sample.mp4" type="video/mp4">
                                 Browser Anda tidak mendukung video tag.
                             </video>
+                            <!-- Pilih arah kamera -->
+<div style="margin-bottom:.5rem;">
+  <label><input type="radio" name="ai-mode" value="exercise" checked onchange="switchAiMode(this.value)"> Latihan Umum</label>
+  <label style="margin-left:.5rem;"><input type="radio" name="ai-mode" value="frontal" onchange="switchAiMode(this.value)"> Depan</label>
+  <label style="margin-left:.5rem;"><input type="radio" name="ai-mode" value="side" onchange="switchAiMode(this.value)"> Samping</label>
+</div>
+
+<!-- Hasil multi-view -->
+<div id="scoliosis-result" style="display:none; margin-top:.5rem;">
+  <div>View: <span id="view-type">-</span></div>
+  <div>Cobb Angle: <span id="cobb-angle">-</span>°</div>
+  <div>Kategori: <span id="severity" style="font-weight:bold; color:var(--success-color)">-</span></div>
+</div>
                             <div class="webcam-container">
                                 <video id="webcam-feed" autoplay playsinline muted></video>
                                 <canvas id="pose-overlay"></canvas>
@@ -1389,6 +1402,94 @@
         loadAiModel();
     });
     </script>
+    <script>
+/* ===== UTILITAS SKOLIOSIS ===== */
+function angleBetween(p1, p2) {
+  return Math.atan2(p2.y - p1.y, p2.x - p1.x) * 180 / Math.PI;
+}
+function estimateCobbAngle(keypoints, view) {
+  if (view === 'side') {
+    const shoulder = keypoints.find(k => k.name === 'left_shoulder');
+    const hip = keypoints.find(k => k.name === 'left_hip');
+    if (!shoulder || !hip) return null;
+    return Math.abs(angleBetween(shoulder, hip));
+  } else { // frontal
+    const ls = keypoints.find(k => k.name === 'left_shoulder');
+    const rs = keypoints.find(k => k.name === 'right_shoulder');
+    if (!ls || !rs) return null;
+    return Math.abs(ls.y - rs.y); // selisih y = semakin miring
+  }
+}
+function classifySeverity(angle) {
+  if (angle < 10) return { label: "Normal", color: "#2e7d32" };
+  if (angle < 25) return { label: "Ringan", color: "#ff9800" };
+  return { label: "Perlu intervensi", color: "#f44336" };
+}
+
+/* ===== MODE SWITCH ===== */
+let currentAiMode = 'exercise';
+const scolPanel = document.getElementById('scoliosis-result');
+function switchAiMode(mode) {
+  currentAiMode = mode;
+  scolPanel.style.display = (mode === 'frontal' || mode === 'side') ? 'block' : 'none';
+  document.getElementById('view-type').textContent = mode;
+}
+window.switchAiMode = switchAiMode;
+
+/* ===== LOOP RENDER ===== */
+let active = false, afId, aiDetector;
+const webcam = document.getElementById('webcam-feed');
+const overlay = document.getElementById('pose-overlay');
+
+async function startAi() {
+  if (!active) {
+    const stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'}});
+    webcam.srcObject = stream; webcam.play();
+    aiDetector = await poseDetection.createDetector(
+      poseDetection.SupportedModels.MoveNet,
+      {modelType:poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING}
+    );
+    active = true;
+    document.getElementById('start-ai-session-btn').textContent = 'Hentikan';
+    renderLoop();
+  } else {
+    active = false; cancelAnimationFrame(afId);
+    webcam.srcObject?.getTracks().forEach(t=>t.stop());
+    document.getElementById('start-ai-session-btn').textContent = 'Mulai Sesi';
+  }
+}
+document.getElementById('start-ai-session-btn').addEventListener('click', startAi);
+
+async function renderLoop() {
+  if (!active) return;
+  const poses = await aiDetector.estimatePoses(webcam);
+  overlay.width = webcam.videoWidth; overlay.height = webcam.videoHeight;
+  const ctx = overlay.getContext('2d'); ctx.clearRect(0,0,overlay.width,overlay.height);
+  if (poses.length) {
+    const kps = poses[0].keypoints;
+    // Gambar skeleton
+    const pairs = poseDetection.util.getAdjacentPairs(poseDetection.SupportedModels.MoveNet);
+    pairs.forEach(([i,j])=>{
+      const a=kps[i],b=kps[j];
+      if(a.score>.5 && b.score>.5){
+        ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y);
+        ctx.lineWidth=3; ctx.strokeStyle='#00bfa5'; ctx.stroke();
+      }
+    });
+    kps.forEach(k=>{if(k.score>.5){ctx.beginPath(); ctx.arc(k.x,k.y,5,0,2*Math.PI); ctx.fillStyle='#00838f'; ctx.fill();}});
+
+    // Analisis sesuai mode
+    const angle = estimateCobbAngle(kps, currentAiMode);
+    if (angle !== null) {
+      const {label,color} = classifySeverity(angle);
+      document.getElementById('cobb-angle').textContent = angle.toFixed(1);
+      const s=document.getElementById('severity'); s.textContent=label; s.style.color=color;
+      document.getElementById('feedback-text').textContent = `${currentAiMode} view - ${label}`;
+    }
+  }
+  afId = requestAnimationFrame(renderLoop);
+}
+</script>
 
 <!-- Bottom Navigation ala aplikasi Android -->
 <nav class="bottom-nav">
