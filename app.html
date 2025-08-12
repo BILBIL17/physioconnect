@@ -470,17 +470,33 @@
                 flex-wrap: wrap;
             }
 
-            .bottom-nav {
-                height: 50px;
-            }
+           .bottom-nav {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 8px 0;
+  background: #fff;
+  box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+}
 
-            .bottom-nav a {
-                font-size: 10px;
-            }
+.bottom-nav a {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 14px; /* ukuran teks */
+  color: #888;
+  text-decoration: none;
+}
 
-            .bottom-nav .nav-icon {
-                font-size: 18px;
-            }
+.bottom-nav a i {
+  font-size: 26px; /* ukuran icon */
+  margin-bottom: 4px;
+}
+
+.bottom-nav a.active {
+  color: #007b7f; /* warna icon/tulisan saat aktif */
+}
+
 
             /* Card & Video */
             .card {
