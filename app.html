@@ -1,0 +1,1699 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physio Connect | Platform Telemedicine Fisioterapi</title>
+
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.js"></script>
+
+    <style>
+        /* CSS Variables untuk tema */
+        :root {
+            --primary-color: #00838f; /* Teal / Green-Blue */
+            --secondary-color: #00bfa5;
+            --background-color: #f4f7f6;
+            --card-background: #ffffff;
+            --text-color: #37474f;
+            --light-text-color: #78909c;
+            --border-color: #e0e0e0;
+            --shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            --success-color: #2e7d32;
+            --warning-color: #ff9800;
+            --error-color: #f44336;
+        }
+
+        /* Reset dan Pengaturan Dasar */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding-bottom: 70px; /* ruang untuk bottom-nav */
+        }
+
+        /* Container Utama */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-bottom: 1.5rem;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+        }
+
+        .header-nav {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+        
+        .header-nav a {
+            text-decoration: none;
+            color: var(--light-text-color);
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        .header-nav a:hover, .header-nav a.active {
+            color: var(--primary-color);
+        }
+        
+        .language-selector {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background-color: #eef1f1;
+            padding: 0.5rem 1rem;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .language-selector:hover {
+            background-color: #e0e0e0;
+        }
+        
+        .language-flag {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #f0f0f0;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        /* Layout Utama (2 Kolom) */
+        .main-layout {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 2rem;
+        }
+
+        /* General Card Style */
+        .card {
+            background-color: var(--card-background);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            overflow: hidden;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .card-header .icon {
+            width: 24px;
+            height: 24px;
+            color: var(--primary-color);
+        }
+        
+        .card-header h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin: 0;
+        }
+        
+        .card-subtitle {
+            color: var(--light-text-color);
+            font-size: 0.9rem;
+            margin-top: 0.25rem;
+        }
+
+        /* --- Bagian Chat --- */
+        #chat-box {
+            height: 400px;
+            overflow-y: auto;
+            padding: 0 1rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .chat-message { display: flex; align-items: flex-end; gap: 10px; max-width: 85%; }
+        .message-bubble { padding: 10px 15px; border-radius: 18px; font-size: 0.95rem; }
+        .avatar { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background-color: var(--border-color); }
+        .avatar .icon { width: 20px; height: 20px; color: var(--light-text-color); }
+        
+        .user-message { align-self: flex-end; flex-direction: row-reverse; }
+        .user-message .message-bubble { background-color: var(--primary-color); color: white; border-bottom-right-radius: 4px; }
+        .user-message .avatar { background-color: #cce8e5; }
+        .user-message .avatar .icon { color: var(--primary-color); }
+        
+        .bot-message { align-self: flex-start; }
+        .bot-message .message-bubble { background-color: #eef1f1; color: var(--text-color); border-bottom-left-radius: 4px;}
+        
+        #chat-input-container { display: flex; }
+        #chat-input { flex-grow: 1; padding: 12px 15px; border: 1px solid var(--border-color); border-radius: 25px 0 0 25px; font-family: 'Poppins', sans-serif; font-size: 1rem; transition: border-color 0.3s ease; }
+        #chat-input:focus { outline: none; border-color: var(--primary-color); }
+        #send-button { padding: 0 25px; border: none; background-color: var(--primary-color); color: white; cursor: pointer; border-radius: 0 25px 25px 0; font-weight: 600; transition: background-color 0.3s ease; }
+        #send-button:hover { background-color: var(--secondary-color); }
+        
+        .search-container {
+            display: flex;
+            margin: 1rem 0;
+            position: relative;
+        }
+        
+        #search-input {
+            flex-grow: 1;
+            padding: 12px 15px 12px 40px;
+            border: 1px solid var(--border-color);
+            border-radius: 25px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 0.95rem;
+        }
+        
+        #search-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+        
+        .search-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--light-text-color);
+        }
+        
+        .search-results {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            max-height: 300px;
+            overflow-y: auto;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            display: none;
+        }
+        
+        .search-result-item {
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .search-result-item:hover {
+            background-color: #f5f5f5;
+        }
+        
+        .search-result-item h4 {
+            margin: 0;
+            font-size: 1rem;
+            color: var(--primary-color);
+        }
+        
+        .search-result-item p {
+            margin: 5px 0 0;
+            font-size: 0.9rem;
+            color: var(--text-color);
+        }
+
+        /* --- Bagian Tracking Terapi --- */
+        #tracking-form { display: flex; flex-direction: column; gap: 1rem; margin-bottom: 1.5rem; }
+        #tracking-form input, #tracking-form select, #tracking-form textarea, #tracking-form button {
+            width: 100%; padding: 12px 15px; font-family: 'Poppins', sans-serif;
+            font-size: 0.95rem; border: 1px solid var(--border-color); border-radius: 8px;
+        }
+        #tracking-form textarea { resize: vertical; min-height: 80px; }
+        #tracking-form button {
+            background-color: var(--primary-color); color: white; font-weight: 600;
+            border: none; cursor: pointer; transition: background-color 0.3s ease;
+        }
+        #tracking-form button:hover { background-color: var(--secondary-color); }
+        
+        /* Progress Tracker */
+        .progress-chart-container {
+            height: 250px;
+            margin: 1rem 0;
+        }
+
+         #jurnal-list { display: flex; flex-direction: column; gap: 1rem; }
+        .jurnal-link { display: flex; align-items: center; justify-content: space-between; text-decoration: none; padding: 1rem; border: 1px solid var(--border-color); border-radius: 8px; transition: all 0.3s ease; }
+        .jurnal-link:hover { border-color: var(--primary-color); background-color: #f8f9fa; transform: translateY(-2px); box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        .jurnal-link span { font-weight: 500; color: var(--text-color); }
+        .jurnal-link .icon { width: 20px; height: 20px; color: var(--light-text-color); }
+        .jurnal-link .icon:hover { color: var(--primary-color); }
+
+        /* --- [BARU] Styling untuk Fitur AI Motion Correct --- */
+        #motion-correct-card .card-header .icon { color: var(--success-color); }
+        #ai-tutor-ui .ai-view-container {
+            display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 1rem;
+        }
+        .ai-view-container > * { flex: 1; min-width: 250px; }
+        .webcam-container {
+            position: relative; aspect-ratio: 4 / 3; background-color: #000;
+            border-radius: 8px; overflow: hidden;
+        }
+        #webcam-feed, #pose-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            transform: scaleX(-1); /* Cerminkan tampilan webcam agar seperti cermin */
+        }
+        #instruction-video {
+            border-radius: 8px; width: 100%; aspect-ratio: 4 / 3; object-fit: cover;
+        }
+        #feedback-panel {
+            background-color: #f0f7f7; border-left: 4px solid var(--primary-color);
+            padding: 1rem; margin-bottom: 1rem; border-radius: 4px; text-align: center;
+        }
+        #feedback-text { font-size: 1.1rem; font-weight: 600; min-height: 2em;}
+        #accuracy-score { font-size: 1rem; color: var(--light-text-color); margin-top: 0.5rem; }
+        #accuracy-score span { font-weight: bold; color: var(--text-color); }
+        #start-ai-session-btn {
+            width: 100%; padding: 12px; background-color: var(--success-color); color: white;
+            border: none; border-radius: 8px; font-weight: 600; cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        #start-ai-session-btn:hover { background-color: #1b5e20; }
+        #start-ai-session-btn:disabled { background-color: var(--light-text-color); cursor: not-allowed; }
+        
+        /* --- Timer Reminder --- */
+        .timer-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1.5rem;
+        }
+        
+        .timer-display {
+            font-size: 3rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin: 1rem 0;
+            font-family: monospace;
+        }
+        
+        .timer-controls {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .timer-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .timer-btn:hover {
+            background-color: var(--secondary-color);
+        }
+        
+        .timer-btn.stop {
+            background-color: var(--error-color);
+        }
+        
+        .timer-btn.stop:hover {
+            background-color: #d32f2f;
+        }
+        
+        .timer-input-container {
+            display: flex;
+            gap: 1rem;
+            width: 100%;
+            margin-top: 1rem;
+        }
+        
+        .timer-input {
+            flex: 1;
+            padding: 10px 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            text-align: center;
+            font-size: 1.1rem;
+        }
+        
+        .timer-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+        
+        .timer-exercises {
+            margin-top: 1.5rem;
+            width: 100%;
+        }
+        
+        .exercise-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .exercise-item:last-child {
+            border-bottom: none;
+        }
+        
+        .exercise-name {
+            font-weight: 500;
+        }
+        
+        .exercise-time {
+            color: var(--light-text-color);
+        }
+        
+        .reminder-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background-color: var(--error-color);
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        
+        .reminder-icon {
+            position: relative;
+        }
+
+        /* --- Bagian Peta --- */
+        #map {
+            width: 100%;
+            height: 300px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        footer {
+            text-align: center;
+            padding: 2rem 0;
+            color: var(--light-text-color);
+            margin-top: 2rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        /* === RESPONSIVE FIXES === */
+
+        /* Container & Layout */
+        @media (max-width: 992px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            .header-nav {
+                width: 100%;
+                justify-content: space-between;
+                flex-wrap: wrap;
+            }
+
+            .bottom-nav {
+                height: 50px;
+            }
+
+            .bottom-nav a {
+                font-size: 10px;
+            }
+
+            .bottom-nav .nav-icon {
+                font-size: 18px;
+            }
+
+            /* Card & Video */
+            .card {
+                padding: 1rem;
+            }
+
+            #instruction-video,
+            .webcam-container {
+                width: 100%;
+                height: auto;
+                max-height: 250px;
+            }
+
+            /* Timer */
+            .timer-display {
+                font-size: 2.5rem;
+            }
+
+            /* Profile */
+            .profile-info {
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+            }
+
+            .profile-actions button {
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                font-size: 14px;
+            }
+
+            .container {
+                padding: 1rem;
+            }
+
+            .timer-input-container {
+                flex-direction: column;
+            }
+
+            .timer-input {
+                width: 100%;
+            }
+
+            h2 {
+                font-size: 1.1rem;
+            }
+
+            .card-header h2 {
+                font-size: 1rem;
+            }
+        }
+
+
+    </style>
+    <style>
+        /* ===== GAYA UMUM ===== */
+        body {
+            margin: 0;
+            font-family: 'Poppins', sans-serif;
+            color: var(--text-color);
+            background-color: var(--background-color);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1.5rem;
+        }
+
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+            color: var(--primary-color);
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+        }
+
+        .header-nav a {
+            text-decoration: none;
+            color: var(--light-text-color);
+            margin-left: 1.5rem;
+        }
+
+        .header-nav a.active, .header-nav a:hover {
+            color: var(--primary-color);
+        }
+/* ===== DRAWER PROFIL ===== */
+#profileDrawer{
+  position:fixed;
+  top:0;left:-100%;
+  width:85%;
+  max-width:320px;
+  height:100%;
+  background:#fff;
+  box-shadow:4px 0 20px rgba(0,0,0,.25);
+  z-index:9999;
+  transition:left .35s ease;
+  display:flex;
+  flex-direction:column;
+}
+#profileDrawer.open{left:0}
+#profileDrawer header{
+  background:var(--primary);
+  color:#fff;
+  padding:1rem;
+  font-weight:600;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+#profileDrawer .content{padding:1.5rem;overflow-y:auto;flex:1}
+#profileDrawer .content label{font-size:.875rem;color:#555;margin-bottom:.25rem;display:block}
+#profileDrawer .content input,select{width:100%;padding:.75rem 1rem;margin-bottom:1rem;border:1px solid #e0e0e0;border-radius:50px;font-family:Poppins}
+#profileDrawer .content button{width:100%;padding:.9rem;background:var(--primary);color:#fff;border:none;border-radius:50px;font-weight:600;cursor:pointer;margin-top:.5rem}
+#profileDrawer .bottom-actions{display:flex;gap:.5rem;margin-top:auto;padding:1rem}
+#profileDrawer .bottom-actions button{flex:1;padding:.75rem;border:none;border-radius:8px;font-size:.875rem}
+#profileDrawer .bottom-actions .logout{background:#f44336;color:#fff}
+#overlay{
+  position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.45);z-index:9998;display:none}
+#overlay.show{display:block}
+</style>
+<style>
+        /* === TAMBAHAN GAYA UNTUK NAVIGASI BAWAH ALA HALODOC === */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: flex;
+            height: 60px;
+            background-color: #ffffff;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 999;
+        }
+
+        .bottom-nav a {
+            flex: 1;
+            text-align: center;
+            text-decoration: none;
+            color: var(--light-text-color);
+            font-size: 12px;
+            padding: 4px 0;
+            transition: color 0.3s ease;
+        }
+
+        .bottom-nav a.active,
+        .bottom-nav a:hover {
+            color: var(--primary-color);
+        }
+
+        .bottom-nav .nav-icon {
+            font-size: 20px;
+            display: block;
+            margin-bottom: 2px;
+        }
+
+        /* === STYLING HALAMAN PROFIL & PENGATURAN === */
+        #profile-card {
+            background-color: var(--card-background);
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            margin-bottom: 80px;
+        }
+
+        #profile-card h2 {
+            margin-bottom: 1rem;
+        }
+
+        .profile-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .profile-info img {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid var(--primary-color);
+        }
+
+        .profile-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .profile-actions button {
+            padding: 10px 15px;
+            font-size: 0.95rem;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background-color 0.3s ease;
+        }
+
+        .profile-actions button:hover {
+            background-color: var(--secondary-color);
+        }
+    </style>
+</head>
+<body>
+
+    <svg width="0" height="0" style="display:none;">
+        <symbol id="icon-logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L12 22M22 12L2 12M19 19L5 5M19 5L5 19"/></symbol>
+        <symbol id="icon-chat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></symbol>
+        <symbol id="icon-map" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></symbol>
+        <symbol id="icon-track" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect><path d="m9 12 2 2 4-4"></path></symbol>
+        <symbol id="icon-bot" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path><path d="M12 16h.01"></path></symbol>
+        <symbol id="icon-graph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10"></path><path d="M12 20V4"></path><path d="M6 20v-6"></path></symbol>
+        <symbol id="icon-timer" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></symbol>
+    </svg>
+
+    <div class="container">
+        <header class="header">
+            <div class="logo">
+                <svg class="logo-icon" fill="currentColor"><use href="#icon-logo"/></svg>
+                <span id="app-title">Physio Connect</span>
+            </div>
+            <nav class="header-nav">
+                <a href="chat.html" class="active" id="nav-consultation">Konsultasi</a>
+                <a href="#tracking-card" id="nav-tracking">Lacak Terapi</a>
+                <a href="#motion-correct-card" id="nav-ai">AI-Coach</a>
+                 <a href="#map-card">Lokasi</a>
+                <div class="language-selector" id="language-selector">
+                    <div class="language-flag">ID</div>
+                    <span id="current-language">Indonesia</span>
+                    <i class="fas fa-chevron-down"></i>
+                </div>
+                <div class="reminder-icon">
+                    <i class="fas fa-bell" id="reminder-icon"></i>
+                    <div class="reminder-badge" id="reminder-badge">1</div>
+                </div>
+            </nav>
+        </header>
+
+        <main class="main-layout">
+            <div class="main-column">
+                <div class="card" id="chat-card">
+                    <div class="card-header">
+                        <svg class="icon"><use href="#icon-chat"/></svg>
+                        <div>
+                            <h2 id="assistant-title">Chat with Physiotherapists</h2>
+                            <div class="card-subtitle" id="assistant-subtitle">Tanya apapun tentang fisioterapi dan kesehatan</div>
+                        </div>
+                    </div>
+                    
+                    <div class="search-container">
+                        <div class="search-icon">
+                            <i class="fas fa-search"></i>
+                        </div>
+                        <input type="text" id="search-input" placeholder="Cari topik fisioterapi...">
+                        <div class="search-results" id="search-results"></div>
+                    </div>
+                
+
+                    <div id="chat-box">
+                         <div class="chat-message bot-message">
+                            <div class="avatar"><svg class="icon"><use href="#icon-bot"/></svg></div>
+                            <div class="message-bubble">Selamat datang di Physio Connect! Saya Fisioterapi Anda. Silakan tanyakan apapun tentang fisioterapi atau kesehatan tulang dan otot.</div>
+                        </div>
+                    </div>
+                    <div id="chat-input-container">
+                        <input type="text" id="chat-input" placeholder="Ketik pesan Anda...">
+                        <button id="send-button">Kirim</button>
+                    </div>
+                </div>
+
+                <div class="sidebar-column">
+                <div class="card" id="map-card">
+                    <div class="card-header">
+                        <svg class="icon"><use href="#icon-map"/></svg>
+                        <h2>Lokasi Klinik Terdekat di lokasi anda</h2>
+                    </div>
+                    <div id="map"></div>
+                </div>
+
+                  <div class="card" id="jurnal-card">
+                    <div class="card-header">
+                        <svg class="icon"><use href="#icon-journal"/></svg>
+                        <h2>Jurnal & Riset Terkini</h2>
+                    </div>
+                    <div id="jurnal-list">
+                        <a href="https://journals2.ums.ac.id/index.php/fisiomu/index" target="_blank" class="jurnal-link">
+                            <span>FisioMu Journal</span>
+                            <svg class="icon"><use href="#icon-external-link"/></svg>
+                        </a>
+                        <a href="https://www.jospt.org/" target="_blank" class="jurnal-link">
+                            <span>JOSPT</span>
+                            <svg class="icon"><use href="#icon-external-link"/></svg>
+                        </a>
+                        <a href="https://ptji.org/index.php/ptji" target="_blank" class="jurnal-link">
+                            <span>British Journal of Sports Medicine</span>
+                            <svg class="icon"><use href="#icon-external-link"/></svg>
+                        </a>
+                    </div>
+
+                <div class="card" id="tracking-card">
+                    <div class="card-header">
+                        <svg class="icon"><use href="#icon-track"/></svg>
+                        <div>
+                            <h2 id="tracking-title">Jurnal Latihan & Terapi</h2>
+                            <div class="card-subtitle" id="tracking-subtitle">Catat setiap sesi terapi dan latihan Anda</div>
+                        </div>
+                    </div>
+                    <form id="tracking-form">
+                        <input type="date" id="log-date" required>
+                        <select id="log-location" required>
+                            <option value="rumah">Di Rumah</option>
+                            <option value="klinik">Di Klinik</option>
+                        </select>
+                        <input type="text" id="log-activity" placeholder="Aktivitas/Terapi (Contoh: Peregangan Punggung)" required>
+                        <textarea id="log-notes" placeholder="Catatan tambahan (durasi, intensitas, perasaan, dll.)"></textarea>
+                        <button type="submit" id="add-log-btn">Tambah Catatan</button>
+                    </form>
+                </div>
+                
+                <div class="card" id="motion-correct-card">
+                    <div class="card-header">
+                        <svg class="icon"><use href="#icon-bot"/></svg>
+                        <div>
+                            <h2 id="ai-title">AI Motion Correct - Asisten Latihan Virtual</h2>
+                            <div class="card-subtitle" id="ai-subtitle">Dapatkan panduan latihan dengan koreksi postur otomatis</div>
+                        </div>
+                    </div>
+                    <div id="ai-tutor-ui">
+                        <div class="ai-view-container">
+                            <video id="instruction-video" controls muted loop playsinline>
+                                <source src="https://assets.codepen.io/3364143/sample.mp4" type="video/mp4">
+                                Browser Anda tidak mendukung video tag.
+                            </video>
+                            <!-- Pilih arah kamera -->
+<div style="margin-bottom:.5rem;">
+  <label><input type="radio" name="ai-mode" value="exercise" checked onchange="switchAiMode(this.value)"> Latihan Umum</label>
+  <label style="margin-left:.5rem;"><input type="radio" name="ai-mode" value="frontal" onchange="switchAiMode(this.value)"> Depan</label>
+  <label style="margin-left:.5rem;"><input type="radio" name="ai-mode" value="side" onchange="switchAiMode(this.value)"> Samping</label>
+</div>
+
+<!-- Hasil multi-view -->
+<div id="scoliosis-result" style="display:none; margin-top:.5rem;">
+  <div>View: <span id="view-type">-</span></div>
+  <div>Cobb Angle: <span id="cobb-angle">-</span>°</div>
+  <div>Kategori: <span id="severity" style="font-weight:bold; color:var(--success-color)">-</span></div>
+</div>
+                            <div class="webcam-container">
+                                <video id="webcam-feed" autoplay playsinline muted></video>
+                                <canvas id="pose-overlay"></canvas>
+                            </div>
+                        </div>
+                        <div id="feedback-panel">
+                            <p id="feedback-text">Posisikan diri Anda di depan kamera dan ikuti instruksi.</p>
+                            <div id="accuracy-score">Akurasi Postur: <span>-</span>%</div>
+                        </div>
+                        <button id="start-ai-session-btn">Mulai Sesi Latihan</button>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="sidebar-column">
+                <div class="card">
+                    <div class="card-header">
+                        <svg class="icon"><use href="#icon-graph"/></svg>
+                        <h2 id="progress-title">Progress Terapi</h2>
+                    </div>
+                    <div class="progress-chart-container">
+                        <canvas id="progress-chart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <svg class="icon"><use href="#icon-timer"/></svg>
+                        <h2 id="reminder-title">Reminder Latihan</h2>
+                    </div>
+                    <div class="timer-container">
+                        <div class="timer-display" id="timer-display">00:00</div>
+                        <div class="timer-controls">
+                            <button class="timer-btn" id="start-timer">Mulai</button>
+                            <button class="timer-btn stop" id="stop-timer">Hentikan</button>
+                        </div>
+                        
+                        <div class="timer-input-container">
+                            <input type="number" id="minutes-input" class="timer-input" min="1" max="60" value="5" placeholder="Menit">
+                            <input type="number" id="seconds-input" class="timer-input" min="0" max="59" value="0" placeholder="Detik">
+                        </div>
+                        
+                        <div class="timer-exercises">
+                            <div class="exercise-item">
+                                <span class="exercise-name" id="exercise-1">Peregangan Leher</span>
+                                <span class="exercise-time">05:00</span>
+                            </div>
+                            <div class="exercise-item">
+                                <span class="exercise-name" id="exercise-2">Peregangan Bahu</span>
+                                <span class="exercise-time">04:30</span>
+                            </div>
+                            <div class="exercise-item">
+                                <span class="exercise-name" id="exercise-3">Peregangan Punggung</span>
+                                <span class="exercise-time">06:00</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+        
+        <footer>
+            &copy; 2025 Physio Connect | Platform Fisioterapi.
+        </footer>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+
+        var map = L.map('map').setView([-6.9932, 110.4207], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        }).addTo(map);
+        
+        const locations = [
+            { lat: -6.9840, lon: 110.4092, name: 'Klinik Fisio Prima', address: 'Jl. Pahlawan No. 1, Semarang' },
+            { lat: -7.0055, lon: 110.4367, name: 'Semarang Sport Rehab', address: 'Jl. Gajah Mada No. 102, Semarang' },
+            { lat: -6.9925, lon: 110.4450, name: 'Fisio Sehat Ceria', address: 'Jl. Dr. Cipto No. 55, Semarang' },
+            { lat: -7.34580, lon: 110.48575, name: 'Fisioterapi Kumala', address: 'Jl. Jl. Arjuna V No.22, RT.03/RW.05, Serengan, Kec. Serengan, Kota Surakarta, Jawa Tengah 57155'}
+        ];
+        locations.forEach(loc => {
+            L.marker([loc.lat, loc.lon]).addTo(map)
+             .bindPopup(`<b>${loc.name}</b><br>${loc.address}`);
+
+               function addClinicMarkers() {
+            clinics.forEach(clinic => {
+                L.marker([clinic.lat, clinic.lon]).addTo(map)
+                 .bindPopup(`<b>${clinic.name}</b><br>${clinic.address}`);
+            });
+        }
+
+        function onLocationFound(e) {
+            const radius = e.accuracy / 2;
+            // Set peta ke lokasi user
+            map.setView(e.latlng, 14); 
+            // Tambahkan penanda lokasi user
+            L.marker(e.latlng).addTo(map).bindPopup("<b>Anda di sini!</b>").openPopup();
+            L.circle(e.latlng, radius).addTo(map);
+            // Tambahkan semua marker klinik
+            addClinicMarkers();
+        }
+
+        function onLocationError(e) {
+            alert('Gagal mendeteksi lokasi Anda. Menampilkan daftar klinik di lokasi default.');
+            // Jika gagal, tampilkan marker klinik di lokasi default
+            addClinicMarkers();
+        }
+
+        // Event listener untuk geolokasi
+        map.on('locationfound', onLocationFound);
+        map.on('locationerror', onLocationError);
+
+        // Memulai permintaan untuk mendeteksi lokasi user
+        map.locate({setView: true, maxZoom: 16});
+        });
+
+
+        // --- Inisialisasi bahasa ---
+        let currentLanguage = 'id';
+        const translations = {
+            id: {
+                appTitle: "Physio Connect",
+                navConsultation: "Konsultasi",
+                navTracking: "Lacak Terapi",
+                navAI: "AI-Coach",
+                assistantTitle: "Chat With Physiotherapists",
+                assistantSubtitle: "Tanya apapun tentang fisioterapi dan kesehatan",
+                trackingTitle: "Jurnal Latihan & Terapi",
+                trackingSubtitle: "Catat setiap sesi terapi dan latihan Anda",
+                aiTitle: "AI Motion Correct - Asisten Latihan Virtual",
+                aiSubtitle: "Dapatkan panduan latihan dengan koreksi postur otomatis",
+                progressTitle: "Progress Terapi",
+                reminderTitle: "Reminder Latihan",
+                exercise1: "Peregangan Leher",
+                exercise2: "Peregangan Bahu",
+                exercise3: "Peregangan Punggung",
+                searchPlaceholder: "Cari topik fisioterapi...",
+                addLogBtn: "Tambah Catatan",
+                startSessionBtn: "Mulai Sesi Latihan",
+                currentLanguage: "Indonesia"
+            },
+            en: {
+                appTitle: "Physio Connect",
+                navConsultation: "Consultation",
+                navTracking: "Track Therapy",
+                navAI: "AI-Coach",
+                assistantTitle: "Virtual Physiotherapy Assistant",
+                assistantSubtitle: "Ask anything about physiotherapy and health",
+                trackingTitle: "Exercise & Therapy Journal",
+                trackingSubtitle: "Record every therapy and exercise session",
+                aiTitle: "AI Motion Correct - Virtual Training Assistant",
+                aiSubtitle: "Get exercise guidance with automatic posture correction",
+                progressTitle: "Therapy Progress",
+                reminderTitle: "Exercise Reminder",
+                exercise1: "Neck Stretch",
+                exercise2: "Shoulder Stretch",
+                exercise3: "Back Stretch",
+                searchPlaceholder: "Search physiotherapy topics...",
+                addLogBtn: "Add Record",
+                startSessionBtn: "Start Training Session",
+                currentLanguage: "English"
+            }
+        };
+        
+        // Fungsi untuk mengganti bahasa
+        function changeLanguage(lang) {
+            currentLanguage = lang;
+            const langData = translations[lang];
+            
+            // Update teks di UI
+            document.getElementById('app-title').textContent = langData.appTitle;
+            document.getElementById('nav-consultation').textContent = langData.navConsultation;
+            document.getElementById('nav-tracking').textContent = langData.navTracking;
+            document.getElementById('nav-ai').textContent = langData.navAI;
+            document.getElementById('assistant-title').textContent = langData.assistantTitle;
+            document.getElementById('assistant-subtitle').textContent = langData.assistantSubtitle;
+            document.getElementById('tracking-title').textContent = langData.trackingTitle;
+            document.getElementById('tracking-subtitle').textContent = langData.trackingSubtitle;
+            document.getElementById('ai-title').textContent = langData.aiTitle;
+            document.getElementById('ai-subtitle').textContent = langData.aiSubtitle;
+            document.getElementById('progress-title').textContent = langData.progressTitle;
+            document.getElementById('reminder-title').textContent = langData.reminderTitle;
+            document.getElementById('exercise-1').textContent = langData.exercise1;
+            document.getElementById('exercise-2').textContent = langData.exercise2;
+            document.getElementById('exercise-3').textContent = langData.exercise3;
+            document.getElementById('search-input').placeholder = langData.searchPlaceholder;
+            document.getElementById('add-log-btn').textContent = langData.addLogBtn;
+            document.getElementById('start-ai-session-btn').textContent = langData.startSessionBtn;
+            document.getElementById('current-language').textContent = langData.currentLanguage;
+            document.querySelector('.language-flag').textContent = lang.toUpperCase();
+            
+            // Update placeholder chat
+            document.getElementById('chat-input').placeholder = 
+                lang === 'id' ? 'Ketik pesan Anda...' : 'Type your message...';
+        }
+        
+        // Event listener untuk tombol bahasa
+        document.getElementById('language-selector').addEventListener('click', function() {
+            const newLang = currentLanguage === 'id' ? 'en' : 'id';
+            changeLanguage(newLang);
+        });
+        
+        // Inisialisasi bahasa
+        changeLanguage('id');
+        
+        // --- Sistem Pencarian Fisioterapi ---
+        const fisioKnowledgeBase = [
+            {
+                id: "fisioterapi",
+                title_id: "Apa itu Fisioterapi?",
+                title_en: "What is Physiotherapy?",
+                content_id: "Fisioterapi adalah bentuk pelayanan kesehatan yang ditujukan untuk mengembangkan, memelihara, dan memulihkan gerak dan fungsi tubuh sepanjang daur kehidupan.",
+                content_en: "Physiotherapy is a healthcare profession that assesses, diagnoses, treats, and works to prevent disease and disability through physical means."
+            },
+            {
+                id: "latihan",
+                title_id: "Latihan Fisioterapi untuk Nyeri Punggung",
+                title_en: "Physiotherapy Exercises for Back Pain",
+                content_id: "Latihan peregangan dan penguatan otot punggung dapat membantu mengurangi nyeri punggung. Latihan seperti cat-camel stretch, pelvic tilt, dan bridge sangat efektif.",
+                content_en: "Stretching and strengthening exercises for the back muscles can help reduce back pain. Exercises like cat-camel stretch, pelvic tilt, and bridge are highly effective."
+            },
+            {
+                id: "rehabilitasi",
+                title_id: "Rehabilitasi Cedera Olahraga",
+                title_en: "Sports Injury Rehabilitation",
+                content_id: "Rehabilitasi cedera olahraga melibatkan program bertahap yang mencakup pengurangan rasa sakit, pemulihan gerak, penguatan otot, dan kembali ke aktivitas olahraga.",
+                content_en: "Sports injury rehabilitation involves a staged program including pain reduction, restoration of movement, muscle strengthening, and return to sports activities."
+            },
+            {
+                id: "postur",
+                title_id: "Koreksi Postur Tubuh",
+                title_en: "Posture Correction",
+                content_id: "Postur tubuh yang baik penting untuk kesehatan tulang belakang. Fisioterapis dapat membantu mengoreksi postur melalui latihan spesifik dan edukasi ergonomis.",
+                content_en: "Good posture is crucial for spinal health. Physiotherapists can help correct posture through specific exercises and ergonomic education."
+            }
+        ];
+        
+        const searchInput = document.getElementById('search-input');
+        const searchResults = document.getElementById('search-results');
+        
+        searchInput.addEventListener('input', function() {
+            const query = this.value.toLowerCase();
+            searchResults.innerHTML = '';
+            
+            if (query.length < 2) {
+                searchResults.style.display = 'none';
+                return;
+            }
+            
+            const filteredResults = fisioKnowledgeBase.filter(item => {
+                const title = currentLanguage === 'id' ? item.title_id : item.title_en;
+                return title.toLowerCase().includes(query);
+            });
+            
+            if (filteredResults.length > 0) {
+                filteredResults.forEach(result => {
+                    const title = currentLanguage === 'id' ? result.title_id : result.title_en;
+                    const content = currentLanguage === 'id' ? result.content_id : result.content_en;
+                    
+                    const resultItem = document.createElement('div');
+                    resultItem.className = 'search-result-item';
+                    resultItem.innerHTML = `
+                        <h4>${title}</h4>
+                        <p>${content}</p>
+                    `;
+                    resultItem.addEventListener('click', function() {
+                        const message = `${title}\n${content}`;
+                        addBotMessage(message);
+                        searchInput.value = '';
+                        searchResults.style.display = 'none';
+                    });
+                    searchResults.appendChild(resultItem);
+                });
+                searchResults.style.display = 'block';
+            } else {
+                searchResults.style.display = 'none';
+            }
+        });
+        
+        // Tutup hasil pencarian saat klik di luar
+        document.addEventListener('click', function(e) {
+            if (!searchResults.contains(e.target) && e.target !== searchInput) {
+                searchResults.style.display = 'none';
+            }
+        });
+        
+        // --- Fungsionalitas Asisten Virtual ---
+        const chatBox = document.getElementById('chat-box');
+        const chatInput = document.getElementById('chat-input');
+        const sendButton = document.getElementById('send-button');
+        
+        function addBotMessage(text) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'chat-message bot-message';
+            messageDiv.innerHTML = `
+                <div class="avatar"><svg class="icon"><use href="#icon-bot"/></svg></div>
+                <div class="message-bubble">${text}</div>
+            `;
+            chatBox.appendChild(messageDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+        
+        function addUserMessage(text) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'chat-message user-message';
+            messageDiv.innerHTML = `
+                <div class="avatar"><svg class="icon"><use href="#icon-bot"/></svg></div>
+                <div class="message-bubble">${text}</div>
+            `;
+            chatBox.appendChild(messageDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            // Kirim ke webhook n8n
+  fetch('https://n8n-3ylssyw7dkrc.cica.sumopod.my.id/webhook/036257b8-966c-4f7f-9674-1b3522c683ba/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      message: text,
+      timestamp: new Date().toISOString()
+    })
+  })
+  .then(response => {
+    if (!response.ok) {
+      throw new Error('Network response was not ok');
+    }
+    return response.json();
+  });
+            
+            // Simulasi respons bot setelah jeda
+            setTimeout(() => {
+                let response = "";
+                const lowerText = text.toLowerCase();
+                
+                if (lowerText.includes("halo") || lowerText.includes("hai")) {
+                    response = currentLanguage === 'id' ? 
+                        "Halo! Ada yang bisa saya bantu terkait fisioterapi?" : 
+                        "Hello! How can I assist you with physiotherapy?";
+                } else if (lowerText.includes("terima kasih")) {
+                    response = currentLanguage === 'id' ? 
+                        "Sama-sama! Jika ada pertanyaan lain, jangan ragu untuk bertanya." : 
+                        "You're welcome! If you have any other questions, feel free to ask.";
+                } else if (lowerText.includes("nyeri") || lowerText.includes("sakit")) {
+                    response = currentLanguage === 'id' ? 
+                        "Nyeri bisa disebabkan oleh berbagai faktor. Untuk nyeri ringan, istirahat dan kompres hangat/dingin bisa membantu. Jika nyeri berlanjut, saya sarankan untuk berkonsultasi dengan fisioterapis." : 
+                        "Pain can be caused by various factors. For mild pain, rest and hot/cold compresses may help. If the pain persists, I recommend consulting a physiotherapist.";
+                } else if (lowerText.includes("cedera") || lowerText.includes("injury")) {
+                    response = currentLanguage === 'id' ?
+                        "Cedera bisa terjadi karena berbagai alasan. Jika Anda mengalami cedera, penting untuk segera menghentikan aktivitas yang menyebabkan cedera tersebut dan berkonsultasi dengan fisioterapis untuk penanganan lebih lanjut." :
+                        "Injuries can occur for various reasons. If you have an injury, it's important to stop the activity that caused it immediately and consult a physiotherapist for further management.";
+                } else {
+                    response = currentLanguage === 'id' ? 
+                        "Saya memahami pertanyaan Anda. Sebagai asisten fisioterapi, saya dapat membantu dengan:\n- Informasi tentang latihan fisik\n- Tips menjaga postur tubuh\n- Panduan rehabilitasi cedera\n- Penjelasan tentang berbagai kondisi muskuloskeletal\n\nAda yang spesifik ingin Anda tanyakan?" : 
+                        "I understand your question. As a physiotherapy assistant, I can help with:\n- Exercise information\n- Posture maintenance tips\n- Injury rehabilitation guidance\n- Explanations about musculoskeletal conditions\n\nIs there something specific you'd like to ask?";
+
+                }
+
+                addBotMessage(response);
+            }, 1000);
+        }
+        
+        sendButton.addEventListener('click', function() {
+            const message = chatInput.value.trim();
+            if (message) {
+                addUserMessage(message);
+                chatInput.value = '';
+            }
+        });
+        
+        chatInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendButton.click();
+            }
+        });
+        
+        // --- Fungsionalitas Progress Tracker ---
+        const progressChart = new Chart(
+            document.getElementById('progress-chart'),
+            {
+                type: 'line',
+                data: {
+                    labels: ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'],
+                    datasets: [{
+                        label: currentLanguage === 'id' ? 'Durasi Latihan (menit)' : 'Exercise Duration (min)',
+                        data: [20, 25, 22, 30, 28, 35, 30],
+                        borderColor: '#00838f',
+                        backgroundColor: 'rgba(0, 131, 143, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 40
+                        }
+                    }
+                }
+            }
+        );
+        
+        // Update chart saat bahasa berubah
+        document.getElementById('language-selector').addEventListener('click', function() {
+            setTimeout(() => {
+                progressChart.data.datasets[0].label = currentLanguage === 'id' ? 
+                    'Durasi Latihan (menit)' : 'Exercise Duration (min)';
+                progressChart.update();
+            }, 100);
+        });
+        
+        // --- Fungsionalitas Reminder Timer ---
+        const timerDisplay = document.getElementById('timer-display');
+        const startTimerBtn = document.getElementById('start-timer');
+        const stopTimerBtn = document.getElementById('stop-timer');
+        const minutesInput = document.getElementById('minutes-input');
+        const secondsInput = document.getElementById('seconds-input');
+        const reminderBadge = document.getElementById('reminder-badge');
+        const reminderIcon = document.getElementById('reminder-icon');
+        
+        let timerInterval;
+        let totalSeconds = 0;
+        let isTimerRunning = false;
+        
+        function startTimer() {
+            if (isTimerRunning) return;
+            
+            const minutes = parseInt(minutesInput.value) || 0;
+            const seconds = parseInt(secondsInput.value) || 0;
+            totalSeconds = minutes * 60 + seconds;
+            
+            if (totalSeconds <= 0) {
+                alert(currentLanguage === 'id' ? 
+                    "Silakan masukkan waktu yang valid" : 
+                    "Please enter a valid time");
+                return;
+            }
+            
+            isTimerRunning = true;
+            updateTimerDisplay();
+            
+            timerInterval = setInterval(() => {
+                totalSeconds--;
+                updateTimerDisplay();
+                
+                if (totalSeconds <= 0) {
+                    clearInterval(timerInterval);
+                    isTimerRunning = false;
+                    
+                    // Tampilkan notifikasi
+                    reminderBadge.textContent = "1";
+                    reminderBadge.style.display = "flex";
+                    
+                    //tampilan alert
+                    // Tampilkan alert
+                    alert(currentLanguage === 'id' ? 
+                        "Waktu latihan Anda telah selesai! Selamat beristirahat." : 
+                        "Your exercise time is up! Time to rest.");
+                }
+            }, 1000);
+        }
+        
+        function stopTimer() {
+            clearInterval(timerInterval);
+            isTimerRunning = false;
+        }
+        
+        function updateTimerDisplay() {
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+            timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+        
+        startTimerBtn.addEventListener('click', startTimer);
+        stopTimerBtn.addEventListener('click', stopTimer);
+        
+        // Reset notifikasi saat badge diklik
+        reminderBadge.addEventListener('click', function() {
+            this.style.display = "none";
+        });
+        
+        // --- Fungsionalitas AI Motion Correct ---
+        const aiButton = document.getElementById('start-ai-session-btn');
+        const aiWebcamFeed = document.getElementById('webcam-feed');
+        const aiPoseOverlay = document.getElementById('pose-overlay');
+        const aiFeedbackText = document.getElementById('feedback-text');
+        const aiAccuracyScore = document.getElementById('accuracy-score').querySelector('span');
+
+        let aiDetector, aiModel, aiAnimationFrameId;
+        let isAiSessionActive = false;
+
+        async function setupAiCamera() {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                alert(currentLanguage === 'id' ? 
+                    'Browser Anda tidak mendukung akses kamera.' : 
+                    'Your browser does not support camera access.');
+                return null;
+            }
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ 'video': { facingMode: 'user' } });
+                aiWebcamFeed.srcObject = stream;
+                return new Promise((resolve) => {
+                    aiWebcamFeed.onloadedmetadata = () => {
+                        aiWebcamFeed.play();
+                        resolve(aiWebcamFeed);
+                    };
+                });
+            } catch (error) {
+                alert(currentLanguage === 'id' ? 
+                    'Akses kamera ditolak. Fitur ini memerlukan izin kamera untuk berfungsi.' : 
+                    'Camera access denied. This feature requires camera permission.');
+                return null;
+            }
+        }
+
+        async function loadAiModel() {
+            aiButton.disabled = true;
+            aiFeedbackText.textContent = currentLanguage === 'id' ? 
+                "Memuat model AI, mohon tunggu..." : 
+                "Loading AI model, please wait...";
+            try {
+                aiModel = poseDetection.SupportedModels.MoveNet;
+                aiDetector = await poseDetection.createDetector(aiModel, { modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING });
+                aiFeedbackText.textContent = currentLanguage === 'id' ? 
+                    "Model siap. Posisikan diri Anda dan klik 'Mulai'." : 
+                    "Model ready. Position yourself and click 'Start'.";
+                aiButton.disabled = false;
+            } catch (error) {
+                aiFeedbackText.textContent = currentLanguage === 'id' ? 
+                    "Gagal memuat model AI. Coba muat ulang halaman." : 
+                    "Failed to load AI model. Please reload the page.";
+            }
+        }
+
+        function drawPoint(ctx, y, x, r, color) {
+            ctx.beginPath();
+            ctx.arc(x, y, r, 0, 2 * Math.PI);
+            ctx.fillStyle = color;
+            ctx.fill();
+        }
+
+        function drawSegment([ay, ax], [by, bx], color, ctx) {
+            ctx.beginPath();
+            ctx.moveTo(ax, ay);
+            ctx.lineTo(bx, by);
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = color;
+            ctx.stroke();
+        }
+
+        function drawSkeleton(keypoints, minConfidence, ctx) {
+            const adjacentPairs = poseDetection.util.getAdjacentPairs(aiModel);
+            adjacentPairs.forEach(([i, j]) => {
+                const kp1 = keypoints[i];
+                const kp2 = keypoints[j];
+                if (kp1.score > minConfidence && kp2.score > minConfidence) {
+                    drawSegment([kp1.y, kp1.x], [kp2.y, kp2.x], '#00bfa5', ctx);
+                }
+            });
+            keypoints.forEach(kp => {
+                if (kp.score > minConfidence) {
+                    drawPoint(ctx, kp.y, kp.x, 6, '#00838f');
+                }
+            });
+        }
+        
+        async function poseLoop() {
+            if (aiDetector && isAiSessionActive) {
+                const poses = await aiDetector.estimatePoses(aiWebcamFeed, {flipHorizontal: false});
+                const ctx = aiPoseOverlay.getContext('2d');
+                aiPoseOverlay.width = aiWebcamFeed.videoWidth;
+                aiPoseOverlay.height = aiWebcamFeed.videoHeight;
+                ctx.clearRect(0, 0, aiPoseOverlay.width, aiPoseOverlay.height);
+
+                if (poses && poses.length > 0) {
+                    const keypoints = poses[0].keypoints;
+                    drawSkeleton(keypoints, 0.5, ctx);
+
+                    // Analisis Postur & Akurasi
+                    const leftShoulder = keypoints.find(p => p.name === 'left_shoulder');
+                    const rightShoulder = keypoints.find(p => p.name === 'right_shoulder');
+                    let postureScore = 0;
+                    let feedbackMessage = currentLanguage === 'id' ? 
+                        "Lakukan gerakan sesuai video." : 
+                        "Perform the movement as shown in the video.";
+
+                    if (leftShoulder && rightShoulder && leftShoulder.score > 0.6 && rightShoulder.score > 0.6) {
+                        const shoulderYDiff = Math.abs(leftShoulder.y - rightShoulder.y);
+                        const shoulderXDiff = Math.abs(leftShoulder.x - rightShoulder.x);
+                        
+                        const tiltRatio = shoulderYDiff / shoulderXDiff;
+                        postureScore = Math.max(0, 1 - (tiltRatio / 0.15));
+                        
+                        if (postureScore < 0.85) {
+                            feedbackMessage = currentLanguage === 'id' ? 
+                                "PERHATIAN: Luruskan bahu Anda!" : 
+                                "WARNING: Straighten your shoulders!";
+                        } else {
+                            feedbackMessage = currentLanguage === 'id' ? 
+                                "Postur Bagus! Pertahankan." : 
+                                "Good Posture! Keep it up.";
+                        }
+                    } else {
+                        feedbackMessage = currentLanguage === 'id' ? 
+                            "Pastikan kedua bahu terlihat jelas oleh kamera." : 
+                            "Ensure both shoulders are clearly visible to the camera.";
+                    }
+
+                    const finalAccuracy = postureScore * 100;
+                    aiAccuracyScore.textContent = Math.round(finalAccuracy);
+                    aiFeedbackText.textContent = feedbackMessage;
+
+                } else {
+                    aiFeedbackText.textContent = currentLanguage === 'id' ? 
+                        "Tidak ada orang yang terdeteksi." : 
+                        "No person detected.";
+                    aiAccuracyScore.textContent = "0";
+                }
+                aiAnimationFrameId = requestAnimationFrame(poseLoop);
+            }
+        }
+
+        aiButton.addEventListener('click', async () => {
+            if (!isAiSessionActive) {
+                const cameraReady = await setupAiCamera();
+                if (cameraReady) {
+                    isAiSessionActive = true;
+                    aiButton.textContent = currentLanguage === 'id' ? 
+                        "Hentikan Sesi" : "Stop Session";
+                    poseLoop();
+                }
+            } else {
+                isAiSessionActive = false;
+                cancelAnimationFrame(aiAnimationFrameId);
+                const stream = aiWebcamFeed.srcObject;
+                if(stream) stream.getTracks().forEach(track => track.stop());
+                aiWebcamFeed.srcObject = null;
+                aiButton.textContent = currentLanguage === 'id' ? 
+                    "Mulai Sesi Latihan" : "Start Training Session";
+                aiFeedbackText.textContent = currentLanguage === 'id' ? 
+                    "Sesi dihentikan." : "Session stopped.";
+                aiAccuracyScore.textContent = "-";
+            }
+        });
+        
+        loadAiModel();
+    });
+    </script>
+    <script>
+/* ===== UTILITAS SKOLIOSIS ===== */
+function angleBetween(p1, p2) {
+  return Math.atan2(p2.y - p1.y, p2.x - p1.x) * 180 / Math.PI;
+}
+function estimateCobbAngle(keypoints, view) {
+  if (view === 'side') {
+    const shoulder = keypoints.find(k => k.name === 'left_shoulder');
+    const hip = keypoints.find(k => k.name === 'left_hip');
+    if (!shoulder || !hip) return null;
+    return Math.abs(angleBetween(shoulder, hip));
+  } else { // frontal
+    const ls = keypoints.find(k => k.name === 'left_shoulder');
+    const rs = keypoints.find(k => k.name === 'right_shoulder');
+    if (!ls || !rs) return null;
+    return Math.abs(ls.y - rs.y); // selisih y = semakin miring
+  }
+}
+function classifySeverity(angle) {
+  if (angle < 10) return { label: "Normal", color: "#2e7d32" };
+  if (angle < 25) return { label: "Ringan", color: "#ff9800" };
+  return { label: "Perlu intervensi", color: "#f44336" };
+}
+
+/* ===== MODE SWITCH ===== */
+let currentAiMode = 'exercise';
+const scolPanel = document.getElementById('scoliosis-result');
+function switchAiMode(mode) {
+  currentAiMode = mode;
+  scolPanel.style.display = (mode === 'frontal' || mode === 'side') ? 'block' : 'none';
+  document.getElementById('view-type').textContent = mode;
+}
+window.switchAiMode = switchAiMode;
+
+/* ===== LOOP RENDER ===== */
+let active = false, afId, aiDetector;
+const webcam = document.getElementById('webcam-feed');
+const overlay = document.getElementById('pose-overlay');
+
+async function startAi() {
+  if (!active) {
+    const stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'}});
+    webcam.srcObject = stream; webcam.play();
+    aiDetector = await poseDetection.createDetector(
+      poseDetection.SupportedModels.MoveNet,
+      {modelType:poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING}
+    );
+    active = true;
+    document.getElementById('start-ai-session-btn').textContent = 'Hentikan';
+    renderLoop();
+  } else {
+    active = false; cancelAnimationFrame(afId);
+    webcam.srcObject?.getTracks().forEach(t=>t.stop());
+    document.getElementById('start-ai-session-btn').textContent = 'Mulai Sesi';
+  }
+}
+document.getElementById('start-ai-session-btn').addEventListener('click', startAi);
+
+async function renderLoop() {
+  if (!active) return;
+  const poses = await aiDetector.estimatePoses(webcam);
+  overlay.width = webcam.videoWidth; overlay.height = webcam.videoHeight;
+  const ctx = overlay.getContext('2d'); ctx.clearRect(0,0,overlay.width,overlay.height);
+  if (poses.length) {
+    const kps = poses[0].keypoints;
+    // Gambar skeleton
+    const pairs = poseDetection.util.getAdjacentPairs(poseDetection.SupportedModels.MoveNet);
+    pairs.forEach(([i,j])=>{
+      const a=kps[i],b=kps[j];
+      if(a.score>.5 && b.score>.5){
+        ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y);
+        ctx.lineWidth=3; ctx.strokeStyle='#00bfa5'; ctx.stroke();
+      }
+    });
+    kps.forEach(k=>{if(k.score>.5){ctx.beginPath(); ctx.arc(k.x,k.y,5,0,2*Math.PI); ctx.fillStyle='#00838f'; ctx.fill();}});
+
+    // Analisis sesuai mode
+    const angle = estimateCobbAngle(kps, currentAiMode);
+    if (angle !== null) {
+      const {label,color} = classifySeverity(angle);
+      document.getElementById('cobb-angle').textContent = angle.toFixed(1);
+      const s=document.getElementById('severity'); s.textContent=label; s.style.color=color;
+      document.getElementById('feedback-text').textContent = `${currentAiMode} view - ${label}`;
+    }
+  }
+  afId = requestAnimationFrame(renderLoop);
+}
+</script>
+
+<!-- Bottom Navigation ala aplikasi Android -->
+<nav class="bottom-nav">
+    <a href="#home-section" class="active"><i class="fas fa-home nav-icon"></i>Home</a>
+    <a href="#chat-card"><i class="fas fa-comments nav-icon"></i>Chat</a>
+    <a href="#tracking-card"><i class="fas fa-dumbbell nav-icon"></i>Terapi</a>
+    <a href="#motion-correct-card"><i class="fas fa-robot nav-icon"></i>AI</a>
+    <a href="#profile-card"><i class="fas fa-user nav-icon"></i>Profil</a>
+</nav>
+
+
+
+</section>
+<!-- ===== DRAWER PROFIL (tanpa merusak kode lama) ===== -->
+<style>
+/* drawer overlay */
+#overlay{
+  position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.45);z-index:9998;display:none}
+#overlay.show{display:block}
+#profileDrawer{
+  position:fixed;top:0;left:-100%;width:85%;max-width:320px;height:100%;
+  background:#fff;box-shadow:4px 0 20px rgba(0,0,0,.25);z-index:9999;
+  transition:left .35s ease;display:flex;flex-direction:column}
+#profileDrawer.open{left:0}
+#profileDrawer header{background:var(--primary-color);color:#fff;padding:1rem;font-weight:600;
+  display:flex;justify-content:space-between;align-items:center}
+#profileDrawer .content{padding:1.5rem;overflow-y:auto;flex:1}
+#profileDrawer label{font-size:.875rem;color:#555;margin-bottom:.25rem;display:block}
+#profileDrawer input,select{width:100%;padding:.75rem 1rem;margin-bottom:1rem;border:1px solid #e0e0e0;border-radius:50px;font-family:'Poppins'}
+#profileDrawer button{width:100%;padding:.9rem;background:var(--primary-color);color:#fff;border:none;border-radius:50px;font-weight:600;margin-top:.5rem;cursor:pointer}
+#profileDrawer .bottom-actions{display:flex;gap:.5rem;margin-top:auto;padding:1rem}
+#profileDrawer .bottom-actions button{flex:1;padding:.75rem;border:none;border-radius:8px;font-size:.875rem}
+#profileDrawer .bottom-actions .logout{background:#f44336;color:#fff}
+</style>
+
+<!-- overlay + drawer -->
+<div id="overlay" onclick="closeDrawer()"></div>
+<div id="profileDrawer">
+  <header>
+    <span>Profil Pengguna</span>
+    <i class="fas fa-times" onclick="closeDrawer()" style="cursor:pointer"></i>
+  </header>
+  <div class="content">
+    <img id="drawerAvatar" style="width:80px;height:80px;border-radius:50%;display:block;margin:0 auto .5rem">
+    <label>Nama Lengkap</label>
+    <input id="drawerName" type="text" placeholder="Nama Anda">
+    <label>Email</label>
+    <input id="drawerEmail" type="email" placeholder="Email Anda">
+    <label>Jenis Kelamin</label>
+    <select id="drawerGender"><option value="">Pilih</option><option>Laki-laki</option><option>Perempuan</option></select>
+    <label>Usia</label>
+    <input id="drawerAge" type="number" min="1" max="120" placeholder="Tahun">
+    <button onclick="saveDrawer()">Simpan</button>
+  </div>
+  <div class="bottom-actions">
+    <button onclick="closeDrawer()">Tutup</button>
+    <button class="logout" onclick="logout()">Logout</button>
+  </div>
+</div>
+
+<script>
+function openDrawer(){
+  document.getElementById('profileDrawer').classList.add('open');
+  document.getElementById('overlay').classList.add('show');
+}
+function closeDrawer(){
+  document.getElementById('profileDrawer').classList.remove('open');
+  document.getElementById('overlay').classList.remove('show');
+}
+function saveDrawer(){
+  const n=document.getElementById('drawerName').value.trim();
+  const e=document.getElementById('drawerEmail').value.trim();
+  if(!n||!e){alert('Nama & email wajib diisi');return;}
+  localStorage.setItem('user_name',n);
+  localStorage.setItem('user_email',e);
+  localStorage.setItem('user_gender',document.getElementById('drawerGender').value);
+  localStorage.setItem('user_age',document.getElementById('drawerAge').value);
+  document.getElementById('welcomeUser').textContent=n;
+  closeDrawer();
+}
+function logout(){
+  ['user_name','user_email','user_gender','user_age'].forEach(k=>localStorage.removeItem(k));
+  location.href='index.html';
+}
+function loadDrawer(){
+  const n=localStorage.getItem('user_name')||'User';
+  const e=localStorage.getItem('user_email')||'user@example.com';
+  document.getElementById('drawerName').value=n;
+  document.getElementById('drawerEmail').value=e;
+  document.getElementById('drawerGender').value=localStorage.getItem('user_gender')||'';
+  document.getElementById('drawerAge').value=localStorage.getItem('user_age')||'';
+  document.getElementById('drawerAvatar').src=`https://ui-avatars.com/api/?name=${encodeURIComponent(n)}&background=00838f&color=fff&size=80`;
+  document.getElementById('welcomeUser').textContent=n;
+}
+loadDrawer();
+</script>
+
+<!-- ubah tombol profil di bottom-nav -->
+<script>
+document.querySelector('.bottom-nav a[href="#profile-card"]').onclick = e => {
+  e.preventDefault();
+  openDrawer();
+};
+</script>
+</body>
+</html>

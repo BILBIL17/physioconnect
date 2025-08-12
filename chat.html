@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Konsultasi AI • Physio Connect</title>
+
+  <!-- Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+  <!-- Icon -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+  <!-- Global Styles -->
+  <style>
+    :root {
+      --primary: #00838f;
+      --glass: rgba(255,255,255,.65);
+      --border: rgba(255,255,255,.25);
+      --shadow: 0 8px 32px rgba(0,0,0,.08);
+      --error: #f44336;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{
+      font-family:'Poppins',sans-serif;
+      background:linear-gradient(135deg,#e0f7fa,#fafafa);
+      color:#37474f;
+      line-height:1.6;
+      padding-bottom:4.5rem; /* space bottom nav */
+    }
+
+    /* Header */
+    .header{
+      display:flex;align-items:center;justify-content:space-between;
+      padding:.75rem 1rem;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.05)
+    }
+    .logo{
+      display:flex;align-items:center;gap:.5rem;font-size:1.25rem;font-weight:600;color:var(--primary)
+    }
+    .logo svg{width:24px;height:24px}
+
+    /* Chat Container */
+    #chat-container{
+      max-width:600px;margin:0 auto;display:flex;flex-direction:column;
+      height:calc(100vh - 4.5rem)
+    }
+    #chat-box{
+      flex:1;overflow-y:auto;padding:.75rem;display:flex;flex-direction:column;gap:.5rem
+    }
+    .chat-message{display:flex;gap:.5rem;max-width:80%}
+    .user-message{align-self:flex-end;flex-direction:row-reverse}
+    .message-bubble{
+      padding:.75rem 1rem;border-radius:20px;font-size:.95rem;line-height:1.4;
+      word-break:break-word
+    }
+    .user-message .message-bubble{background:var(--primary);color:#fff}
+    .bot-message .message-bubble{background:var(--glass);border:1px solid var(--border)}
+
+    /* Input */
+    #chat-input-container{
+      display:flex;padding:.75rem;background:#fff;border-top:1px solid #e0e0e0
+    }
+    #chat-input{
+      flex:1;padding:.75rem 1rem;border:none;border-radius:50px;background:#f4f7f6
+    }
+    #send-btn{
+      margin-left:.5rem;padding:.75rem 1.25rem;border:none;border-radius:50px;
+      background:var(--primary);color:#fff;font-weight:600;cursor:pointer
+    }
+
+    /* Bottom Nav */
+    .bottom-nav{
+      position:fixed;bottom:0;left:0;width:100%;display:flex;
+      justify-content:space-around;background:#fff;border-top:1px solid #e0e0e0
+    }
+    .bottom-nav a{
+      flex:1;text-align:center;padding:.5rem 0;font-size:.75rem;color:#37474f;text-decoration:none
+    }
+    .bottom-nav a.active{color:var(--primary)}
+    .bottom-nav i{font-size:1.25rem;display:block;margin-bottom:.125rem}
+
+    /* Drawer */
+    #overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.45);z-index:9998;display:none}
+    #overlay.show{display:block}
+    #profileDrawer{
+      position:fixed;top:0;left:-100%;width:85%;max-width:320px;height:100%;
+      background:#fff;box-shadow:4px 0 20px rgba(0,0,0,.25);z-index:9999;
+      transition:left .35s ease;display:flex;flex-direction:column}
+    #profileDrawer.open{left:0}
+    #profileDrawer header{background:var(--primary);color:#fff;padding:1rem;font-weight:600;
+      display:flex;justify-content:space-between;align-items:center}
+    #profileDrawer .content{padding:1.5rem;overflow-y:auto;flex:1}
+    #profileDrawer label{font-size:.875rem;color:#555;margin-bottom:.25rem;display:block}
+    #profileDrawer input,select{width:100%;padding:.75rem 1rem;margin-bottom:1rem;border:1px solid #e0e0e0;border-radius:50px;font-family:'Poppins'}
+    #profileDrawer button{width:100%;padding:.9rem;background:var(--primary);color:#fff;border:none;border-radius:50px;font-weight:600;margin-top:.5rem;cursor:pointer}
+    #profileDrawer .bottom-actions{display:flex;gap:.5rem;margin-top:auto;padding:1rem}
+    #profileDrawer .bottom-actions button{flex:1;padding:.75rem;border:none;border-radius:8px;font-size:.875rem}
+    #profileDrawer .logout{background:#f44336;color:#fff}
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="header">
+  <a href="app.html" class="logo">
+    <i class="fas fa-arrow-left"></i>
+    <span>Physio Connect</span>
+  </a>
+</header>
+
+<!-- Chat -->
+<main id="chat-container">
+  <div id="chat-box">
+    <div class="chat-message bot-message">
+      <div class="message-bubble">Selamat datang di Asisten Fisioterapi AI. Ceritakan keluhan Anda.</div>
+    </div>
+  </div>
+  <div id="chat-input-container">
+    <input id="chat-input" placeholder="Ketik keluhan Anda...">
+    <button id="send-btn">Kirim</button>
+  </div>
+</main>
+
+<!-- Bottom Nav -->
+<nav class="bottom-nav">
+  <a href="app.html"><i class="fas fa-home"></i>Home</a>
+  <a href="chat.html" class="active"><i class="fas fa-comments"></i>Chat</a>
+  <a href="app.html#tracking-card"><i class="fas fa-dumbbell"></i>Terapi</a>
+  <a href="app.html#motion-correct-card"><i class="fas fa-robot"></i>AI</a>
+  <a href="javascript:void(0)" onclick="openDrawer()"><i class="fas fa-user"></i>Profil</a>
+</nav>
+
+<!-- Drawer -->
+<div id="overlay" onclick="closeDrawer()"></div>
+<div id="profileDrawer">
+  <header>
+    <span>Profil Pengguna</span>
+    <i class="fas fa-times" onclick="closeDrawer()" style="cursor:pointer"></i>
+  </header>
+  <div class="content">
+    <img id="drawerAvatar" style="width:80px;height:80px;border-radius:50%;display:block;margin:0 auto .5rem">
+    <label>Nama Lengkap</label>
+    <input id="drawerName" type="text" placeholder="Nama Anda">
+    <label>Email</label>
+    <input id="drawerEmail" type="email" placeholder="Email Anda">
+    <label>Jenis Kelamin</label>
+    <select id="drawerGender"><option value="">Pilih</option><option>Laki-laki</option><option>Perempuan</option></select>
+    <label>Usia</label>
+    <input id="drawerAge" type="number" min="1" max="120" placeholder="Tahun">
+    <button onclick="saveDrawer()">Simpan</button>
+  </div>
+  <div class="bottom-actions">
+    <button onclick="closeDrawer()">Tutup</button>
+    <button class="logout" onclick="logout()">Logout</button>
+  </div>
+</div>
+
+<script>
+/* ---------- drawer & chat ---------- */
+function openDrawer(){
+  document.getElementById('profileDrawer').classList.add('open');
+  document.getElementById('overlay').classList.add('show');
+}
+function closeDrawer(){
+  document.getElementById('profileDrawer').classList.remove('open');
+  document.getElementById('overlay').classList.remove('show');
+}
+function saveDrawer(){
+  const n=document.getElementById('drawerName').value.trim();
+  const e=document.getElementById('drawerEmail').value.trim();
+  if(!n||!e){alert('Nama & email wajib diisi');return;}
+  localStorage.setItem('user_name',n);
+  localStorage.setItem('user_email',e);
+  localStorage.setItem('user_gender',document.getElementById('drawerGender').value);
+  localStorage.setItem('user_age',document.getElementById('drawerAge').value);
+  closeDrawer();
+}
+function logout(){
+  ['user_name','user_email','user_gender','user_age'].forEach(k=>localStorage.removeItem(k));
+  location.href='index.html';
+}
+function loadDrawer(){
+  const n=localStorage.getItem('user_name')||'User';
+  const e=localStorage.getItem('user_email')||'user@example.com';
+  document.getElementById('drawerName').value=n;
+  document.getElementById('drawerEmail').value=e;
+  document.getElementById('drawerGender').value=localStorage.getItem('user_gender')||'';
+  document.getElementById('drawerAge').value=localStorage.getItem('user_age')||'';
+  document.getElementById('drawerAvatar').src=`https://ui-avatars.com/api/?name=${encodeURIComponent(n)}&background=00838f&color=fff&size=80`;
+}
+loadDrawer();
+
+/* chat */
+function addMsg(txt,me=false){
+  const div=document.createElement('div');
+  div.className='chat-message '+(me?'user-message':'bot-message');
+  div.innerHTML='<div class="message-bubble">'+txt+'</div>';
+  document.getElementById('chat-box').appendChild(div);
+  document.getElementById('chat-box').scrollTop=1e9;
+}
+document.getElementById('send-btn').addEventListener('click',()=>{
+  const t=document.getElementById('chat-input').value.trim();
+  if(!t)return;
+  addMsg(t,true);
+  document.getElementById('chat-input').value='';
+  const r=t.toLowerCase().includes('leher')?'Saya mendeteksi nyeri leher. Latihan: Neck tilt 15 detik kanan-kiri.':'Saya memahami pertanyaan Anda. Ada yang spesifik?';
+  setTimeout(()=>addMsg(r),600);
+});
+document.getElementById('chat-input').addEventListener('keypress',e=>{if(e.key==='Enter')document.getElementById('send-btn').click();});
+</script>
+
+</body>
+</html>
