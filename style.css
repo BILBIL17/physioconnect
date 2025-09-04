@@ -75,9 +75,37 @@ body {
 .rekam-item p { margin: 0.5rem 0 0; white-space: pre-wrap; }
 .rekam-item img { max-width: 100%; border-radius: 0.5rem; margin-top: 0.5rem; }
 .empty-state { text-align: center; color: var(--light-text-color); padding: 2rem; }
-.jurnal-link { display: flex; align-items: center; justify-content: space-between; text-decoration: none; padding: 1rem; margin: 0 -1.25rem; transition: background-color 0.2s; }
-.jurnal-link span { font-weight: 500; color: var(--text-color); }
-.jurnal-link:hover { background-color: #f8f9fa; }
+
+.jurnal-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem; /* Memberi sedikit jarak antar link */
+}
+.jurnal-link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    text-decoration: none;
+    padding: 1rem;
+    transition: background-color 0.2s, border-color 0.2s;
+    border: 1px solid var(--border-color);
+    border-radius: 0.75rem; /* Border radius yang konsisten */
+}
+.jurnal-link:hover {
+    background-color: #f8f9fa;
+    border-color: var(--primary-color);
+}
+.jurnal-link span {
+    font-weight: 500;
+    color: var(--text-color);
+}
+/* INI BAGIAN PENTINGNYA */
+.jurnal-link i, .jurnal-link svg.icon {
+    color: var(--light-text-color);
+    width: 20px;  /* Tetapkan lebar ikon */
+    height: 20px; /* Tetapkan tinggi ikon */
+    flex-shrink: 0; /* Mencegah ikon menyusut */
+}
 
 /* --- AI VIEW --- */
 .ai-controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
