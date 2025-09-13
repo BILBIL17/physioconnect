@@ -9,7 +9,7 @@
   "preview": "vite preview",
   "predeploy": "npm run build",
   "deploy": "gh-pages -d dist -b gh-pages",
-   "homepage": "https://BILBIL17.github.io/ConnectWithPhysio"
+   "homepage": "https://BILBIL17.github.io/physioconnect"
   },
   "dependencies": {
     "@google/genai": "^1.17.0",
